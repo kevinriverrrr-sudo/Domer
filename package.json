@@ -1,0 +1,16 @@
+{
+  "name": "funpay-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension for Funpay",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite build --watch",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  }
+}
