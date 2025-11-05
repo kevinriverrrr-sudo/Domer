@@ -199,14 +199,15 @@ async def add_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ У вас нет доступа к этой команде!")
         return
     
-    if not context.args or len(context.args) < 3:
-        await update.message.reply_text("❌ Формат: /add_currency @username amount currency")
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text("❌ Формат: /add_currency @username amount [currency]\nПример: /add_currency @user 1000 diamond\nПо умолчанию: diamond")
         return
     
     try:
         target_username = context.args[0].replace("@", "")
         amount = float(context.args[1])
-        currency = context.args[2].lower()
+        # Валюта опциональна, по умолчанию diamond
+        currency = context.args[2].lower() if len(context.args) >= 3 else "diamond"
         
         target_user_id = None
         for uid, u in data['users'].items():
@@ -220,13 +221,13 @@ async def add_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         target_user = get_user(int(target_user_id), data)
         
-        if currency == "diamond":
+        if currency == "diamond" or currency == "💎":
             target_user['diamond'] += amount
             await update.message.reply_text(f"✅ Добавлено {amount}💎 пользователю @{target_username}")
-        elif currency == "gold":
+        elif currency == "gold" or currency == "🪙":
             target_user['gold'] += amount
             await update.message.reply_text(f"✅ Добавлено {amount}🪙 пользователю @{target_username}")
-        elif currency == "crystal":
+        elif currency == "crystal" or currency == "💠":
             target_user['crystal'] += amount
             await update.message.reply_text(f"✅ Добавлено {amount}💠 пользователю @{target_username}")
         else:
@@ -245,14 +246,15 @@ async def del_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ У вас нет доступа к этой команде!")
         return
     
-    if not context.args or len(context.args) < 3:
-        await update.message.reply_text("❌ Формат: /del_currency @username amount currency")
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text("❌ Формат: /del_currency @username amount [currency]\nПример: /del_currency @user 1000 diamond\nПо умолчанию: diamond")
         return
     
     try:
         target_username = context.args[0].replace("@", "")
         amount = float(context.args[1])
-        currency = context.args[2].lower()
+        # Валюта опциональна, по умолчанию diamond
+        currency = context.args[2].lower() if len(context.args) >= 3 else "diamond"
         
         target_user_id = None
         for uid, u in data['users'].items():
@@ -266,19 +268,19 @@ async def del_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         target_user = get_user(int(target_user_id), data)
         
-        if currency == "diamond":
+        if currency == "diamond" or currency == "💎":
             if target_user['diamond'] >= amount:
                 target_user['diamond'] -= amount
                 await update.message.reply_text(f"✅ Удалено {amount}💎 у пользователя @{target_username}")
             else:
                 await update.message.reply_text("❌ У пользователя недостаточно алмазов!")
-        elif currency == "gold":
+        elif currency == "gold" or currency == "🪙":
             if target_user['gold'] >= amount:
                 target_user['gold'] -= amount
                 await update.message.reply_text(f"✅ Удалено {amount}🪙 у пользователя @{target_username}")
             else:
                 await update.message.reply_text("❌ У пользователя недостаточно золота!")
-        elif currency == "crystal":
+        elif currency == "crystal" or currency == "💠":
             if target_user['crystal'] >= amount:
                 target_user['crystal'] -= amount
                 await update.message.reply_text(f"✅ Удалено {amount}💠 у пользователя @{target_username}")
