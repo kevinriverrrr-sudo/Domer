@@ -1,0 +1,27 @@
+{
+  "users": {
+    "7694543415": {
+      "diamond": 0,
+      "gold": 0,
+      "crystal": 0,
+      "click_power": 1,
+      "mines": [],
+      "total_clicks": 0,
+      "total_mined": 0,
+      "username": "MarkusGarantor",
+      "level": 1,
+      "experience": 0
+    }
+  },
+  "admin_users": [
+    "7694543415"
+  ],
+  "trends": {
+    "diamond": 1.0,
+    "gold": 1.0,
+    "crystal": 1.0
+  },
+  "top_clickers": [],
+  "top_miners": [],
+  "top_richest": []
+}
