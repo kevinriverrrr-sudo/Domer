@@ -1,0 +1,81 @@
+/* Стили для элементов расширения на странице Funpay */
+
+#funpay-helper-badge {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.funpay-helper-status {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.funpay-helper-icon {
+  font-size: 16px;
+}
+
+.funpay-helper-text {
+  white-space: nowrap;
+}
+
+.funpay-helper-notification {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 10001;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  max-width: 300px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.funpay-helper-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.funpay-helper-notification-success {
+  background: #48bb78;
+}
+
+.funpay-helper-notification-info {
+  background: #4299e1;
+}
+
+.funpay-helper-notification-warning {
+  background: #ed8936;
+}
+
+.funpay-helper-notification-error {
+  background: #f56565;
+}
