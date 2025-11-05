@@ -2,624 +2,553 @@
 # -*- coding: utf-8 -*-
 """
 SAMP Arizona RP Admin Tools
-Программа для администрирования сервера SAMP Arizona RP
+Общедоступный помощник для админов сервера SAMP Arizona RP
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
-import socket
-import struct
-import threading
 import json
 import os
+import subprocess
+import platform
 from datetime import datetime
+
+# Попытка импорта pyperclip, если не установлен - используем альтернативу
+try:
+    import pyperclip
+    HAS_PYPERCLIP = True
+except ImportError:
+    HAS_PYPERCLIP = False
 
 class SAMPAdminTools:
     def __init__(self, root):
         self.root = root
-        self.root.title("SAMP Arizona RP - Admin Tools")
-        self.root.geometry("900x700")
+        self.root.title("SAMP Arizona RP - Admin Tools Helper")
+        self.root.geometry("1000x750")
         self.root.resizable(True, True)
         
-        # Переменные подключения
-        self.socket = None
-        self.connected = False
-        self.server_ip = ""
-        self.server_port = 7777
-        self.rcon_password = ""
-        
-        # Загрузка конфигурации
-        self.load_config()
+        # История команд
+        self.command_history = []
         
         # Создание интерфейса
         self.create_ui()
         
-    def load_config(self):
-        """Загрузка конфигурации из файла"""
-        config_file = "config.json"
-        if os.path.exists(config_file):
-            try:
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    self.server_ip = config.get('server_ip', '')
-                    self.server_port = config.get('server_port', 7777)
-                    self.rcon_password = config.get('rcon_password', '')
-            except:
-                pass
-    
-    def save_config(self):
-        """Сохранение конфигурации в файл"""
-        config = {
-            'server_ip': self.server_ip,
-            'server_port': self.server_port,
-            'rcon_password': self.rcon_password
-        }
-        with open('config.json', 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
-    
     def create_ui(self):
         """Создание пользовательского интерфейса"""
         # Меню
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
         
-        # Меню "Файл"
-        file_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Файл", menu=file_menu)
-        file_menu.add_command(label="Настройки", command=self.show_settings)
-        file_menu.add_separator()
-        file_menu.add_command(label="Выход", command=self.root.quit)
-        
         # Меню "Инструменты"
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Инструменты", menu=tools_menu)
-        tools_menu.add_command(label="Управление игроками", command=self.show_player_management)
-        tools_menu.add_command(label="Управление сервером", command=self.show_server_management)
-        tools_menu.add_command(label="Статистика", command=self.show_statistics)
+        tools_menu.add_command(label="Справочник команд", command=self.show_commands_reference)
+        tools_menu.add_command(label="История команд", command=self.show_history)
+        tools_menu.add_separator()
+        tools_menu.add_command(label="Очистить историю", command=self.clear_history)
         
         # Меню "Помощь"
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Помощь", menu=help_menu)
         help_menu.add_command(label="О программе", command=self.show_about)
         
-        # Панель подключения
-        connection_frame = ttk.LabelFrame(self.root, text="Подключение к серверу", padding=10)
-        connection_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        ttk.Label(connection_frame, text="IP сервера:").grid(row=0, column=0, sticky=tk.W, padx=5)
-        self.ip_entry = ttk.Entry(connection_frame, width=20)
-        self.ip_entry.insert(0, self.server_ip)
-        self.ip_entry.grid(row=0, column=1, padx=5)
-        
-        ttk.Label(connection_frame, text="Порт:").grid(row=0, column=2, sticky=tk.W, padx=5)
-        self.port_entry = ttk.Entry(connection_frame, width=10)
-        self.port_entry.insert(0, str(self.server_port))
-        self.port_entry.grid(row=0, column=3, padx=5)
-        
-        ttk.Label(connection_frame, text="RCON пароль:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        self.rcon_entry = ttk.Entry(connection_frame, width=20, show="*")
-        self.rcon_entry.insert(0, self.rcon_password)
-        self.rcon_entry.grid(row=1, column=1, padx=5, pady=5)
-        
-        self.connect_btn = ttk.Button(connection_frame, text="Подключиться", command=self.connect_server)
-        self.connect_btn.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
-        
-        self.status_label = ttk.Label(connection_frame, text="Статус: Отключено", foreground="red")
-        self.status_label.grid(row=2, column=0, columnspan=4, pady=5)
-        
         # Вкладки для инструментов
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
+        # Вкладка "Генератор команд"
+        self.commands_frame = ttk.Frame(notebook)
+        notebook.add(self.commands_frame, text="Генератор команд")
+        self.create_commands_tab()
+        
         # Вкладка "Быстрые команды"
-        self.quick_commands_frame = ttk.Frame(notebook)
-        notebook.add(self.quick_commands_frame, text="Быстрые команды")
+        self.quick_frame = ttk.Frame(notebook)
+        notebook.add(self.quick_frame, text="Быстрые команды")
         self.create_quick_commands_tab()
         
-        # Вкладка "Игроки"
-        self.players_frame = ttk.Frame(notebook)
-        notebook.add(self.players_frame, text="Игроки")
-        self.create_players_tab()
+        # Вкладка "Справочник"
+        self.reference_frame = ttk.Frame(notebook)
+        notebook.add(self.reference_frame, text="Справочник")
+        self.create_reference_tab()
         
-        # Вкладка "RCON команды"
-        self.rcon_frame = ttk.Frame(notebook)
-        notebook.add(self.rcon_frame, text="RCON команды")
-        self.create_rcon_tab()
+        # Вкладка "История"
+        self.history_frame = ttk.Frame(notebook)
+        notebook.add(self.history_frame, text="История")
+        self.create_history_tab()
+    
+    def create_commands_tab(self):
+        """Создание вкладки генератора команд"""
+        # Генератор команд для игроков
+        players_frame = ttk.LabelFrame(self.commands_frame, text="Команды для игроков", padding=10)
+        players_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Вкладка "Логи"
-        self.logs_frame = ttk.Frame(notebook)
-        notebook.add(self.logs_frame, text="Логи")
-        self.create_logs_tab()
+        commands_grid = ttk.Frame(players_frame)
+        commands_grid.pack(fill=tk.BOTH, expand=True)
+        
+        # Левая колонка
+        left_col = ttk.Frame(commands_grid)
+        left_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        
+        # Правая колонка
+        right_col = ttk.Frame(commands_grid)
+        right_col.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        
+        # Kick команда
+        self.create_command_generator(left_col, "Kick игрока", "kick", ["ID игрока"])
+        
+        # Ban команда
+        self.create_command_generator(left_col, "Ban игрока", "ban", ["ID игрока"])
+        
+        # Teleport к игроку
+        self.create_command_generator(left_col, "Teleport к игроку", "goto", ["ID игрока"])
+        
+        # Teleport игрока
+        self.create_command_generator(left_col, "Teleport игрока ко мне", "gethere", ["ID игрока"])
+        
+        # Выдать деньги
+        self.create_command_generator(right_col, "Выдать деньги", "givemoney", ["ID игрока", "Сумма"])
+        
+        # Выдать оружие
+        self.create_command_generator(right_col, "Выдать оружие", "givegun", ["ID игрока", "ID оружия"])
+        
+        # Изменить уровень
+        self.create_command_generator(right_col, "Изменить уровень", "setlevel", ["ID игрока", "Уровень"])
+        
+        # Изменить респект
+        self.create_command_generator(right_col, "Изменить респект", "setrespect", ["ID игрока", "Респект"])
+        
+        # Команды для сервера
+        server_frame = ttk.LabelFrame(self.commands_frame, text="Команды для сервера", padding=10)
+        server_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        server_grid = ttk.Frame(server_frame)
+        server_grid.pack(fill=tk.BOTH, expand=True)
+        
+        server_left = ttk.Frame(server_grid)
+        server_left.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        
+        server_right = ttk.Frame(server_grid)
+        server_right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        
+        # Сообщение в чат
+        self.create_command_generator(server_left, "Сообщение в чат", "say", ["Текст сообщения"])
+        
+        # Аннонс
+        self.create_command_generator(server_left, "Аннонс", "announce", ["Текст аннонса"])
+        
+        # Сохранить все
+        self.create_command_generator(server_left, "Сохранить все", "saveall", [])
+        
+        # Перезагрузить сервер
+        self.create_command_generator(server_right, "Перезагрузить сервер", "gmx", [])
+        
+        # Остановить сервер
+        self.create_command_generator(server_right, "Остановить сервер", "exit", [])
+    
+    def create_command_generator(self, parent, label_text, command_base, params):
+        """Создание генератора команды"""
+        frame = ttk.Frame(parent)
+        frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(frame, text=f"{label_text}:").pack(side=tk.LEFT, padx=5)
+        
+        entries = []
+        for param in params:
+            entry = ttk.Entry(frame, width=15)
+            entry.pack(side=tk.LEFT, padx=2)
+            entry.insert(0, param)
+            entries.append(entry)
+        
+        def generate():
+            values = [e.get() for e in entries]
+            if command_base in ["gmx", "exit", "saveall"]:
+                cmd = command_base
+            else:
+                cmd = f"{command_base} {' '.join(values)}"
+            
+            self.copy_command(cmd)
+            self.add_to_history(cmd)
+            messagebox.showinfo("Готово", f"Команда скопирована в буфер обмена:\n{cmd}")
+        
+        ttk.Button(frame, text="Сгенерировать", command=generate, width=15).pack(side=tk.LEFT, padx=5)
     
     def create_quick_commands_tab(self):
         """Создание вкладки быстрых команд"""
+        info_label = ttk.Label(self.quick_frame, 
+                              text="Выберите команду и она будет скопирована в буфер обмена",
+                              font=("Arial", 10))
+        info_label.pack(pady=10)
+        
         # Команды для игроков
-        players_frame = ttk.LabelFrame(self.quick_commands_frame, text="Команды для игроков", padding=10)
+        players_frame = ttk.LabelFrame(self.quick_frame, text="Быстрые команды для игроков", padding=10)
         players_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        commands = [
-            ("Kick игрока", "kick"),
-            ("Ban игрока", "ban"),
-            ("Teleport к игроку", "goto"),
-            ("Teleport игрока", "gethere"),
-            ("Выдать деньги", "givemoney"),
-            ("Выдать оружие", "givegun"),
-            ("Изменить уровень", "setlevel"),
-            ("Изменить респект", "setrespect"),
+        player_commands = [
+            ("Kick [ID]", "kick"),
+            ("Ban [ID]", "ban"),
+            ("Teleport к [ID]", "goto"),
+            ("Teleport [ID] ко мне", "gethere"),
+            ("Выдать деньги [ID] [сумма]", "givemoney"),
+            ("Выдать оружие [ID] [оружие]", "givegun"),
+            ("Установить уровень [ID] [уровень]", "setlevel"),
+            ("Установить респект [ID] [респект]", "setrespect"),
+            ("Забанить IP [IP]", "banip"),
+            ("Разбанить IP [IP]", "unbanip"),
         ]
         
         row = 0
         col = 0
-        for cmd_name, cmd_base in commands:
-            btn = ttk.Button(players_frame, text=cmd_name, 
-                           command=lambda c=cmd_base: self.show_command_dialog(c))
+        for cmd_text, cmd_base in player_commands:
+            btn = ttk.Button(players_frame, text=cmd_text,
+                           command=lambda c=cmd_base, t=cmd_text: self.quick_copy(c, t))
             btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W+tk.E)
             col += 1
             if col > 2:
                 col = 0
                 row += 1
         
+        players_frame.columnconfigure(0, weight=1)
+        players_frame.columnconfigure(1, weight=1)
+        players_frame.columnconfigure(2, weight=1)
+        
         # Команды для сервера
-        server_frame = ttk.LabelFrame(self.quick_commands_frame, text="Команды для сервера", padding=10)
+        server_frame = ttk.LabelFrame(self.quick_frame, text="Быстрые команды для сервера", padding=10)
         server_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         server_commands = [
+            ("Сообщение в чат [текст]", "say"),
+            ("Аннонс [текст]", "announce"),
+            ("Сохранить все", "saveall"),
             ("Перезагрузить сервер", "gmx"),
             ("Остановить сервер", "exit"),
-            ("Сохранить все", "saveall"),
-            ("Чат в игру", "say"),
-            ("Аннонс", "announce"),
+            ("Информация о сервере", "info"),
+            ("Список игроков", "players"),
+            ("Очистить чат", "clear"),
         ]
         
         row = 0
         col = 0
-        for cmd_name, cmd_base in server_commands:
-            btn = ttk.Button(server_frame, text=cmd_name,
-                           command=lambda c=cmd_base: self.show_command_dialog(c))
+        for cmd_text, cmd_base in server_commands:
+            btn = ttk.Button(server_frame, text=cmd_text,
+                           command=lambda c=cmd_base, t=cmd_text: self.quick_copy(c, t))
             btn.grid(row=row, column=col, padx=5, pady=5, sticky=tk.W+tk.E)
             col += 1
             if col > 2:
                 col = 0
                 row += 1
+        
+        server_frame.columnconfigure(0, weight=1)
+        server_frame.columnconfigure(1, weight=1)
+        server_frame.columnconfigure(2, weight=1)
     
-    def create_players_tab(self):
-        """Создание вкладки управления игроками"""
-        # Поиск игрока
-        search_frame = ttk.Frame(self.players_frame)
-        search_frame.pack(fill=tk.X, padx=5, pady=5)
+    def create_reference_tab(self):
+        """Создание вкладки справочника"""
+        scroll_frame = scrolledtext.ScrolledText(self.reference_frame, wrap=tk.WORD, font=("Courier", 10))
+        scroll_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        ttk.Label(search_frame, text="Поиск игрока:").pack(side=tk.LEFT, padx=5)
-        self.player_search_entry = ttk.Entry(search_frame, width=30)
-        self.player_search_entry.pack(side=tk.LEFT, padx=5)
-        ttk.Button(search_frame, text="Найти", command=self.search_player).pack(side=tk.LEFT, padx=5)
-        ttk.Button(search_frame, text="Обновить список", command=self.refresh_players).pack(side=tk.LEFT, padx=5)
+        reference_text = """
+╔══════════════════════════════════════════════════════════════╗
+║          СПРАВОЧНИК КОМАНД SAMP ARIZONA RP                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+КОМАНДЫ ДЛЯ УПРАВЛЕНИЯ ИГРОКАМИ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+kick [ID]                    - Кикнуть игрока с сервера
+ban [ID]                     - Забанить игрока
+goto [ID]                    - Телепортироваться к игроку
+gethere [ID]                 - Телепортировать игрока к себе
+givemoney [ID] [сумма]       - Выдать деньги игроку
+givegun [ID] [оружие]        - Выдать оружие игроку
+setlevel [ID] [уровень]      - Установить уровень игрока
+setrespect [ID] [респект]    - Установить респект игрока
+banip [IP]                   - Забанить IP адрес
+unbanip [IP]                 - Разбанить IP адрес
+freeze [ID]                  - Заморозить игрока
+unfreeze [ID]                - Разморозить игрока
+slap [ID]                    - Ударить игрока
+explode [ID]                 - Взорвать игрока
+sethealth [ID] [HP]          - Установить здоровье
+setarmour [ID] [броня]       - Установить броню
+setweather [ID] [погода]     - Установить погоду для игрока
+settime [ID] [час]           - Установить время для игрока
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+КОМАНДЫ ДЛЯ УПРАВЛЕНИЯ СЕРВЕРОМ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+say [текст]                  - Отправить сообщение в чат
+announce [текст]             - Отправить аннонс всем игрокам
+saveall                      - Сохранить всех игроков
+gmx                          - Перезагрузить игровой режим
+exit                         - Остановить сервер
+info                         - Информация о сервере
+players                      - Список игроков онлайн
+clear                        - Очистить чат
+changemode [текст]           - Изменить название режима
+password [пароль]            - Установить пароль сервера
+password 0                   - Убрать пароль сервера
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ID ОРУЖИЙ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+0  - Кулаки
+1  - Кастет
+2  - Гольф клюшка
+3  - Нож
+4  - Бейсбольная бита
+5  - Лопата
+6  - Кий
+7  - Катана
+8  - Топор
+9  - Бита
+10 - Огнетушитель
+11 - Пистолет
+12 - Пистолет с глушителем
+13 - Desert Eagle
+14 - Дробовик
+15 - Sawnoff
+16 - SPAS-12
+17 - Uzi
+18 - MP5
+19 - AK-47
+20 - M4
+21 - Технический карабин
+22 - Снайперская винтовка
+23 - Ракетница
+24 - Тепловая ракета
+25 - Огнемет
+26 - Миниган
+27 - Бомба
+28 - Баллончик
+29 - Огнетушитель
+30 - Фотоаппарат
+31 - Ночное видение
+32 - Тепловизор
+33 - Парашют
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ПОЛЕЗНЫЕ СОВЕТЫ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Все команды вводятся в консоль сервера или через RCON
+• ID игрока можно узнать командой /players или через админ панель
+• Используйте эту программу для быстрого создания команд
+• Скопированные команды можно вставить в консоль сервера
+• История команд сохраняется для удобства повторного использования
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
         
-        # Список игроков
-        list_frame = ttk.Frame(self.players_frame)
+        scroll_frame.insert("1.0", reference_text)
+        scroll_frame.config(state=tk.DISABLED)
+    
+    def create_history_tab(self):
+        """Создание вкладки истории"""
+        info_label = ttk.Label(self.history_frame, 
+                              text="История сгенерированных команд (двойной клик для копирования)",
+                              font=("Arial", 10))
+        info_label.pack(pady=5)
+        
+        # Список истории
+        list_frame = ttk.Frame(self.history_frame)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        columns = ("ID", "Имя", "IP", "Пинг")
-        self.players_tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
-        
-        for col in columns:
-            self.players_tree.heading(col, text=col)
-            self.players_tree.column(col, width=150)
-        
-        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.players_tree.yview)
-        self.players_tree.configure(yscrollcommand=scrollbar.set)
-        
-        self.players_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar = ttk.Scrollbar(list_frame)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Действия с игроком
-        actions_frame = ttk.LabelFrame(self.players_frame, text="Действия", padding=10)
-        actions_frame.pack(fill=tk.X, padx=5, pady=5)
+        self.history_listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, font=("Courier", 10))
+        self.history_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.history_listbox.yview)
         
-        action_buttons = [
-            ("Kick", self.kick_selected_player),
-            ("Ban", self.ban_selected_player),
-            ("Teleport к", self.goto_selected_player),
-            ("Teleport сюда", self.gethere_selected_player),
-            ("Дать деньги", self.give_money_selected),
-            ("Дать оружие", self.give_weapon_selected),
-        ]
+        self.history_listbox.bind('<Double-Button-1>', self.copy_from_history)
         
-        for btn_text, btn_cmd in action_buttons:
-            ttk.Button(actions_frame, text=btn_text, command=btn_cmd).pack(side=tk.LEFT, padx=5)
+        # Кнопки управления историей
+        buttons_frame = ttk.Frame(self.history_frame)
+        buttons_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Button(buttons_frame, text="Копировать выбранное", 
+                  command=self.copy_selected_from_history).pack(side=tk.LEFT, padx=5)
+        ttk.Button(buttons_frame, text="Очистить историю", 
+                  command=self.clear_history).pack(side=tk.LEFT, padx=5)
     
-    def create_rcon_tab(self):
-        """Создание вкладки RCON команд"""
-        # Поле ввода команды
-        input_frame = ttk.Frame(self.rcon_frame)
-        input_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Label(input_frame, text="RCON команда:").pack(side=tk.LEFT, padx=5)
-        self.rcon_command_entry = ttk.Entry(input_frame, width=50)
-        self.rcon_command_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        self.rcon_command_entry.bind('<Return>', lambda e: self.execute_rcon_command())
-        
-        ttk.Button(input_frame, text="Выполнить", command=self.execute_rcon_command).pack(side=tk.LEFT, padx=5)
-        
-        # История команд
-        history_frame = ttk.LabelFrame(self.rcon_frame, text="История команд", padding=5)
-        history_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        self.command_history = scrolledtext.ScrolledText(history_frame, height=10, width=80)
-        self.command_history.pack(fill=tk.BOTH, expand=True)
-        
-        # Быстрые команды
-        quick_frame = ttk.LabelFrame(self.rcon_frame, text="Быстрые команды", padding=5)
-        quick_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        quick_cmds = [
-            ("Список игроков", "players"),
-            ("Информация о сервере", "info"),
-            ("Загрузить GMX", "gmx"),
-            ("Сохранить все", "saveall"),
-        ]
-        
-        for cmd_text, cmd in quick_cmds:
-            btn = ttk.Button(quick_frame, text=cmd_text,
-                           command=lambda c=cmd: self.rcon_command_entry.insert(0, c))
-            btn.pack(side=tk.LEFT, padx=5)
+    def copy_command(self, command):
+        """Копирование команды в буфер обмена"""
+        try:
+            if HAS_PYPERCLIP:
+                pyperclip.copy(command)
+            else:
+                # Альтернативный способ копирования
+                self.copy_to_clipboard(command)
+            self.log(f"Команда скопирована: {command}")
+        except Exception as e:
+            # Если не удалось скопировать, показываем команду для ручного копирования
+            dialog = tk.Toplevel(self.root)
+            dialog.title("Команда")
+            dialog.geometry("500x150")
+            dialog.transient(self.root)
+            
+            ttk.Label(dialog, text="Скопируйте команду вручную:").pack(pady=10)
+            text_widget = tk.Text(dialog, height=3, font=("Courier", 12))
+            text_widget.pack(padx=10, pady=5, fill=tk.BOTH, expand=True)
+            text_widget.insert("1.0", command)
+            text_widget.select_range("1.0", tk.END)
+            text_widget.focus()
+            
+            ttk.Button(dialog, text="Закрыть", command=dialog.destroy).pack(pady=5)
     
-    def create_logs_tab(self):
-        """Создание вкладки логов"""
-        logs_text = scrolledtext.ScrolledText(self.logs_frame, height=30, width=80)
-        logs_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.logs_text = logs_text
+    def copy_to_clipboard(self, text):
+        """Альтернативный способ копирования в буфер обмена"""
+        try:
+            if platform.system() == 'Windows':
+                subprocess.run(['clip'], input=text.encode('utf-8'), check=True, shell=True)
+            elif platform.system() == 'Darwin':
+                subprocess.run(['pbcopy'], input=text.encode('utf-8'), check=True)
+            else:
+                # Linux
+                try:
+                    subprocess.run(['xclip', '-selection', 'clipboard'], input=text.encode('utf-8'), check=True)
+                except FileNotFoundError:
+                    try:
+                        subprocess.run(['xsel', '--clipboard', '--input'], input=text.encode('utf-8'), check=True)
+                    except FileNotFoundError:
+                        raise Exception("Установите xclip или xsel для Linux")
+        except Exception as e:
+            raise Exception(f"Не удалось скопировать: {str(e)}")
+    
+    def quick_copy(self, command_base, command_text):
+        """Быстрое копирование команды с подсказкой"""
+        # Показываем диалог для ввода параметров
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Команда: {command_text}")
+        dialog.geometry("400x200")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Определяем параметры команды
+        if "[ID]" in command_text:
+            params = ["ID игрока"]
+        elif "[текст]" in command_text:
+            params = ["Текст"]
+        elif "[сумма]" in command_text:
+            params = ["ID игрока", "Сумма"]
+        elif "[оружие]" in command_text:
+            params = ["ID игрока", "ID оружия"]
+        elif "[уровень]" in command_text:
+            params = ["ID игрока", "Уровень"]
+        elif "[респект]" in command_text:
+            params = ["ID игрока", "Респект"]
+        elif "[IP]" in command_text:
+            params = ["IP адрес"]
+        else:
+            params = []
+        
+        entries = []
+        for i, param in enumerate(params):
+            ttk.Label(dialog, text=f"{param}:").pack(pady=5)
+            entry = ttk.Entry(dialog, width=30)
+            entry.pack(pady=2)
+            entries.append(entry)
+        
+        def execute():
+            if command_base in ["gmx", "exit", "saveall", "info", "players", "clear"]:
+                cmd = command_base
+            else:
+                values = [e.get() for e in entries]
+                if not all(values):
+                    messagebox.showerror("Ошибка", "Заполните все поля!")
+                    return
+                cmd = f"{command_base} {' '.join(values)}"
+            
+            self.copy_command(cmd)
+            self.add_to_history(cmd)
+            dialog.destroy()
+            messagebox.showinfo("Готово", f"Команда скопирована:\n{cmd}")
+        
+        if not params:
+            # Команда без параметров
+            ttk.Label(dialog, text="Команда без параметров").pack(pady=20)
+            execute()
+        else:
+            ttk.Button(dialog, text="Сгенерировать и скопировать", command=execute).pack(pady=10)
+    
+    def add_to_history(self, command):
+        """Добавление команды в историю"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        history_entry = f"[{timestamp}] {command}"
+        self.command_history.append(command)
+        self.history_listbox.insert(tk.END, history_entry)
+        self.history_listbox.see(tk.END)
+    
+    def copy_from_history(self, event):
+        """Копирование команды из истории по двойному клику"""
+        selection = self.history_listbox.curselection()
+        if selection:
+            index = selection[0]
+            command = self.command_history[index]
+            self.copy_command(command)
+            messagebox.showinfo("Готово", f"Команда скопирована:\n{command}")
+    
+    def copy_selected_from_history(self):
+        """Копирование выбранной команды из истории"""
+        selection = self.history_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("Предупреждение", "Выберите команду из списка!")
+            return
+        index = selection[0]
+        command = self.command_history[index]
+        self.copy_command(command)
+        messagebox.showinfo("Готово", f"Команда скопирована:\n{command}")
+    
+    def clear_history(self):
+        """Очистка истории команд"""
+        if messagebox.askyesno("Подтверждение", "Очистить всю историю команд?"):
+            self.command_history.clear()
+            self.history_listbox.delete(0, tk.END)
+            messagebox.showinfo("Готово", "История очищена!")
+    
+    def show_commands_reference(self):
+        """Показать справочник команд"""
+        # Переключение на вкладку справочника
+        pass
+    
+    def show_history(self):
+        """Показать историю"""
+        # Переключение на вкладку истории
+        pass
     
     def log(self, message):
-        """Добавление сообщения в лог"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_message = f"[{timestamp}] {message}\n"
-        self.logs_text.insert(tk.END, log_message)
-        self.logs_text.see(tk.END)
-    
-    def connect_server(self):
-        """Подключение к серверу"""
-        if self.connected:
-            self.disconnect_server()
-            return
-        
-        self.server_ip = self.ip_entry.get()
-        try:
-            self.server_port = int(self.port_entry.get())
-        except ValueError:
-            messagebox.showerror("Ошибка", "Неверный порт!")
-            return
-        
-        self.rcon_password = self.rcon_entry.get()
-        
-        if not self.server_ip or not self.rcon_password:
-            messagebox.showerror("Ошибка", "Заполните все поля!")
-            return
-        
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.settimeout(5)
-            
-            # Проверка подключения
-            packet = self.build_info_packet()
-            self.socket.sendto(packet, (self.server_ip, self.server_port))
-            
-            data, addr = self.socket.recvfrom(4096)
-            
-            self.connected = True
-            self.status_label.config(text="Статус: Подключено", foreground="green")
-            self.connect_btn.config(text="Отключиться")
-            self.save_config()
-            self.log(f"Подключено к серверу {self.server_ip}:{self.server_port}")
-            messagebox.showinfo("Успех", "Успешно подключено к серверу!")
-            
-        except Exception as e:
-            self.log(f"Ошибка подключения: {str(e)}")
-            messagebox.showerror("Ошибка", f"Не удалось подключиться: {str(e)}")
-            if self.socket:
-                self.socket.close()
-                self.socket = None
-    
-    def disconnect_server(self):
-        """Отключение от сервера"""
-        if self.socket:
-            self.socket.close()
-            self.socket = None
-        self.connected = False
-        self.status_label.config(text="Статус: Отключено", foreground="red")
-        self.connect_btn.config(text="Подключиться")
-        self.log("Отключено от сервера")
-    
-    def build_info_packet(self):
-        """Построение пакета запроса информации"""
-        packet = b'SAMP'
-        packet += struct.pack('4B', *[int(x) for x in self.server_ip.split('.')])
-        packet += struct.pack('<H', self.server_port)
-        packet += b'i'
-        return packet
-    
-    def build_rcon_packet(self, command):
-        """Построение RCON пакета"""
-        packet = b'SAMP'
-        packet += struct.pack('4B', *[int(x) for x in self.server_ip.split('.')])
-        packet += struct.pack('<H', self.server_port)
-        packet += b'r'
-        packet += struct.pack('<H', len(self.rcon_password))
-        packet += self.rcon_password.encode('utf-8')
-        packet += struct.pack('<H', len(command))
-        packet += command.encode('utf-8')
-        return packet
-    
-    def send_rcon_command(self, command):
-        """Отправка RCON команды"""
-        if not self.connected:
-            messagebox.showerror("Ошибка", "Не подключено к серверу!")
-            return None
-        
-        try:
-            packet = self.build_rcon_packet(command)
-            self.socket.sendto(packet, (self.server_ip, self.server_port))
-            
-            data, addr = self.socket.recvfrom(4096)
-            
-            if len(data) > 11:
-                response_length = struct.unpack('<H', data[11:13])[0]
-                response = data[13:13+response_length].decode('utf-8', errors='ignore')
-                return response
-            return ""
-        except Exception as e:
-            self.log(f"Ошибка выполнения команды: {str(e)}")
-            return None
-    
-    def execute_rcon_command(self):
-        """Выполнение RCON команды"""
-        command = self.rcon_command_entry.get()
-        if not command:
-            return
-        
-        self.log(f"Выполнение команды: {command}")
-        response = self.send_rcon_command(command)
-        
-        if response is not None:
-            self.command_history.insert(tk.END, f"> {command}\n")
-            if response:
-                self.command_history.insert(tk.END, f"{response}\n")
-            self.command_history.insert(tk.END, "\n")
-            self.command_history.see(tk.END)
-            self.log(f"Ответ: {response}")
-        else:
-            self.log("Ошибка выполнения команды")
-        
-        self.rcon_command_entry.delete(0, tk.END)
-    
-    def show_command_dialog(self, command_type):
-        """Показать диалог для ввода параметров команды"""
-        if not self.connected:
-            messagebox.showerror("Ошибка", "Не подключено к серверу!")
-            return
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title(f"Команда: {command_type}")
-        dialog.geometry("400x200")
-        
-        ttk.Label(dialog, text="ID игрока:").pack(pady=5)
-        player_id_entry = ttk.Entry(dialog, width=20)
-        player_id_entry.pack(pady=5)
-        
-        if command_type in ["givemoney", "setlevel", "setrespect"]:
-            ttk.Label(dialog, text="Значение:").pack(pady=5)
-            value_entry = ttk.Entry(dialog, width=20)
-            value_entry.pack(pady=5)
-        elif command_type == "givegun":
-            ttk.Label(dialog, text="ID оружия:").pack(pady=5)
-            value_entry = ttk.Entry(dialog, width=20)
-            value_entry.pack(pady=5)
-        else:
-            value_entry = None
-        
-        def execute():
-            player_id = player_id_entry.get()
-            if not player_id:
-                messagebox.showerror("Ошибка", "Введите ID игрока!")
-                return
-            
-            if value_entry:
-                value = value_entry.get()
-                if not value:
-                    messagebox.showerror("Ошибка", "Введите значение!")
-                    return
-                cmd = f"{command_type} {player_id} {value}"
-            else:
-                cmd = f"{command_type} {player_id}"
-            
-            self.send_rcon_command(cmd)
-            self.log(f"Выполнено: {cmd}")
-            dialog.destroy()
-            messagebox.showinfo("Успех", "Команда выполнена!")
-        
-        ttk.Button(dialog, text="Выполнить", command=execute).pack(pady=10)
-    
-    def search_player(self):
-        """Поиск игрока"""
-        search_term = self.player_search_entry.get()
-        if not search_term:
-            return
-        
-        # Обновление списка игроков
-        self.refresh_players()
-    
-    def refresh_players(self):
-        """Обновление списка игроков"""
-        if not self.connected:
-            messagebox.showerror("Ошибка", "Не подключено к серверу!")
-            return
-        
-        # Очистка списка
-        for item in self.players_tree.get_children():
-            self.players_tree.delete(item)
-        
-        # Получение списка игроков
-        response = self.send_rcon_command("players")
-        if response:
-            lines = response.split('\n')
-            for line in lines[1:]:  # Пропускаем заголовок
-                if line.strip():
-                    parts = line.split()
-                    if len(parts) >= 4:
-                        player_id = parts[0]
-                        player_name = ' '.join(parts[1:-2])
-                        ip = parts[-2] if len(parts) > 2 else "N/A"
-                        ping = parts[-1] if len(parts) > 1 else "N/A"
-                        self.players_tree.insert("", tk.END, values=(player_id, player_name, ip, ping))
-        
-        self.log("Список игроков обновлен")
-    
-    def kick_selected_player(self):
-        """Kick выбранного игрока"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        item = self.players_tree.item(selection[0])
-        player_id = item['values'][0]
-        self.send_rcon_command(f"kick {player_id}")
-        self.log(f"Игрок {player_id} кикнут")
-        messagebox.showinfo("Успех", f"Игрок {player_id} кикнут!")
-    
-    def ban_selected_player(self):
-        """Ban выбранного игрока"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        item = self.players_tree.item(selection[0])
-        player_id = item['values'][0]
-        self.send_rcon_command(f"ban {player_id}")
-        self.log(f"Игрок {player_id} забанен")
-        messagebox.showinfo("Успех", f"Игрок {player_id} забанен!")
-    
-    def goto_selected_player(self):
-        """Teleport к выбранному игроку"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        item = self.players_tree.item(selection[0])
-        player_id = item['values'][0]
-        self.send_rcon_command(f"goto {player_id}")
-        self.log(f"Teleport к игроку {player_id}")
-    
-    def gethere_selected_player(self):
-        """Teleport выбранного игрока"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        item = self.players_tree.item(selection[0])
-        player_id = item['values'][0]
-        self.send_rcon_command(f"gethere {player_id}")
-        self.log(f"Игрок {player_id} телепортирован")
-    
-    def give_money_selected(self):
-        """Выдать деньги выбранному игроку"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Выдать деньги")
-        dialog.geometry("300x150")
-        
-        ttk.Label(dialog, text="Сумма:").pack(pady=10)
-        amount_entry = ttk.Entry(dialog, width=20)
-        amount_entry.pack(pady=5)
-        
-        def execute():
-            amount = amount_entry.get()
-            if not amount:
-                messagebox.showerror("Ошибка", "Введите сумму!")
-                return
-            
-            item = self.players_tree.item(selection[0])
-            player_id = item['values'][0]
-            self.send_rcon_command(f"givemoney {player_id} {amount}")
-            self.log(f"Игроку {player_id} выдано {amount} денег")
-            dialog.destroy()
-            messagebox.showinfo("Успех", "Деньги выданы!")
-        
-        ttk.Button(dialog, text="Выдать", command=execute).pack(pady=10)
-    
-    def give_weapon_selected(self):
-        """Выдать оружие выбранному игроку"""
-        selection = self.players_tree.selection()
-        if not selection:
-            messagebox.showerror("Ошибка", "Выберите игрока!")
-            return
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Выдать оружие")
-        dialog.geometry("300x150")
-        
-        ttk.Label(dialog, text="ID оружия:").pack(pady=10)
-        weapon_entry = ttk.Entry(dialog, width=20)
-        weapon_entry.pack(pady=5)
-        
-        def execute():
-            weapon_id = weapon_entry.get()
-            if not weapon_id:
-                messagebox.showerror("Ошибка", "Введите ID оружия!")
-                return
-            
-            item = self.players_tree.item(selection[0])
-            player_id = item['values'][0]
-            self.send_rcon_command(f"givegun {player_id} {weapon_id}")
-            self.log(f"Игроку {player_id} выдано оружие {weapon_id}")
-            dialog.destroy()
-            messagebox.showinfo("Успех", "Оружие выдано!")
-        
-        ttk.Button(dialog, text="Выдать", command=execute).pack(pady=10)
-    
-    def show_settings(self):
-        """Показать настройки"""
-        messagebox.showinfo("Настройки", "Настройки сохранены автоматически при подключении.")
-    
-    def show_player_management(self):
-        """Показать управление игроками"""
-        # Переключение на вкладку игроков
+        """Логирование (можно добавить в будущем)"""
         pass
-    
-    def show_server_management(self):
-        """Показать управление сервером"""
-        pass
-    
-    def show_statistics(self):
-        """Показать статистику"""
-        if not self.connected:
-            messagebox.showerror("Ошибка", "Не подключено к серверу!")
-            return
-        
-        info = self.send_rcon_command("info")
-        if info:
-            messagebox.showinfo("Информация о сервере", info)
     
     def show_about(self):
         """Показать информацию о программе"""
-        about_text = """SAMP Arizona RP Admin Tools
-Версия 1.0
+        about_text = """SAMP Arizona RP Admin Tools Helper
+Версия 2.0
 
-Программа для администрирования сервера SAMP Arizona RP.
-Включает в себя все необходимые инструменты для управления сервером и игроками.
+Общедоступный помощник для админов сервера SAMP Arizona RP.
+Программа помогает быстро генерировать команды для управления сервером.
+
+Функции:
+• Генератор команд с формами ввода
+• Быстрые команды для частых действий
+• Справочник всех команд
+• История команд для повторного использования
+• Копирование команд в буфер обмена
+
+Использование:
+1. Выберите нужную команду
+2. Заполните параметры (если требуется)
+3. Команда будет скопирована в буфер обмена
+4. Вставьте команду в консоль сервера
 
 © 2024"""
         messagebox.showinfo("О программе", about_text)
-    
-    def __del__(self):
-        """Деструктор"""
-        self.disconnect_server()
 
 def main():
     root = tk.Tk()
