@@ -2,7 +2,7 @@
 chcp 65001 >nul
 echo ========================================
 echo Компиляция SAMP Arizona RP Admin Tools
-echo Версия для Windows
+echo Версия для Windows - Современный интерфейс
 echo ========================================
 echo.
 
@@ -16,7 +16,7 @@ if errorlevel 1 (
 )
 
 echo Установка зависимостей...
-pip install pyinstaller
+pip install pyinstaller pyperclip
 
 echo.
 echo Очистка старых файлов...
@@ -26,7 +26,7 @@ if exist *.spec del /q *.spec
 
 echo.
 echo Компиляция в EXE файл...
-pyinstaller --onefile --windowed --name=SAMP_Arizona_RP_Admin_Tools --icon=NONE admin_tools.py
+pyinstaller --onefile --windowed --name=SAMP_Arizona_RP_Admin_Tools --icon=NONE --noconsole admin_tools.py
 
 if exist dist\SAMP_Arizona_RP_Admin_Tools.exe (
     echo.
@@ -35,7 +35,8 @@ if exist dist\SAMP_Arizona_RP_Admin_Tools.exe (
     echo ========================================
     echo EXE файл создан: dist\SAMP_Arizona_RP_Admin_Tools.exe
     echo.
-    echo Скопируйте файл и config.json в одну папку для использования.
+    echo Программа готова к использованию!
+    echo Не требует подключения к серверу или RCON пароля.
 ) else (
     echo.
     echo ========================================
