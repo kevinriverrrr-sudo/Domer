@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style>
+    <title>Game Style</title>
+    <description>Игровой стиль для XenForo форума с современным дизайном</description>
+    <version_string>1.0.0</version_string>
+    <version_id>1</version_id>
+    <author>MarkusGarantor</author>
+    
+    <properties>
+        <!-- Основные цвета -->
+        <property property_id="colorPalette" data_type="color" default_value="#1a1a2e">
+            <title>Основной цвет фона</title>
+            <description>Темный фон для игрового стиля</description>
+        </property>
+        
+        <property property_id="colorPaletteAccent1" data_type="color" default_value="#16213e">
+            <title>Акцентный цвет 1</title>
+            <description>Вторичный темный цвет</description>
+        </property>
+        
+        <property property_id="colorPaletteAccent2" data_type="color" default_value="#0f3460">
+            <title>Акцентный цвет 2</title>
+            <description>Третичный темный цвет</description>
+        </property>
+        
+        <property property_id="colorPaletteAccent3" data_type="color" default_value="#e94560">
+            <title>Игровой акцент</title>
+            <description>Яркий игровой акцентный цвет</description>
+        </property>
+        
+        <property property_id="colorPaletteText" data_type="color" default_value="#eeeeee">
+            <title>Цвет текста</title>
+            <description>Основной цвет текста</description>
+        </property>
+        
+        <property property_id="colorPaletteTextLight" data_type="color" default_value="#ffffff">
+            <title>Светлый текст</title>
+            <description>Цвет для заголовков и важного текста</description>
+        </property>
+        
+        <!-- Цвета ссылок -->
+        <property property_id="colorPaletteLink" data_type="color" default_value="#4fc3f7">
+            <title>Цвет ссылок</title>
+            <description>Цвет обычных ссылок</description>
+        </property>
+        
+        <property property_id="colorPaletteLinkHover" data_type="color" default_value="#81d4fa">
+            <title>Цвет ссылок при наведении</title>
+            <description>Цвет ссылок при наведении курсора</description>
+        </property>
+        
+        <!-- Цвета кнопок -->
+        <property property_id="colorPaletteButton" data_type="color" default_value="#e94560">
+            <title>Цвет кнопок</title>
+            <description>Основной цвет кнопок</description>
+        </property>
+        
+        <property property_id="colorPaletteButtonHover" data_type="color" default_value="#ff6b7f">
+            <title>Цвет кнопок при наведении</title>
+            <description>Цвет кнопок при наведении</description>
+        </property>
+        
+        <!-- Цвета границ -->
+        <property property_id="colorPaletteBorder" data_type="color" default_value="#2a2a3e">
+            <title>Цвет границ</title>
+            <description>Цвет границ элементов</description>
+        </property>
+        
+        <property property_id="colorPaletteBorderLight" data_type="color" default_value="#3a3a4e">
+            <title>Светлая граница</title>
+            <description>Цвет светлых границ</description>
+        </property>
+        
+        <!-- Типографика -->
+        <property property_id="fontFamilyBody" data_type="string" default_value="'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif">
+            <title>Шрифт основного текста</title>
+            <description>Шрифт для основного контента</description>
+        </property>
+        
+        <property property_id="fontFamilyMono" data_type="string" default_value="'Courier New', 'Consolas', 'Monaco', monospace">
+            <title>Моноширинный шрифт</title>
+            <description>Шрифт для кода</description>
+        </property>
+        
+        <property property_id="fontSizeBase" data_type="integer" default_value="14">
+            <title>Базовый размер шрифта</title>
+            <description>Размер шрифта в пикселях</description>
+        </property>
+        
+        <!-- Настройки скругления -->
+        <property property_id="borderRadius" data_type="integer" default_value="8">
+            <title>Радиус скругления</title>
+            <description>Радиус скругления углов в пикселях</description>
+        </property>
+        
+        <property property_id="borderRadiusSmall" data_type="integer" default_value="4">
+            <title>Маленький радиус скругления</title>
+            <description>Радиус скругления для маленьких элементов</description>
+        </property>
+        
+        <!-- Тени -->
+        <property property_id="boxShadow" data_type="string" default_value="0 4px 6px rgba(0, 0, 0, 0.3)">
+            <title>Тень элементов</title>
+            <description>Тень для карточек и блоков</description>
+        </property>
+        
+        <property property_id="boxShadowHover" data_type="string" default_value="0 6px 12px rgba(233, 69, 96, 0.3)">
+            <title>Тень при наведении</title>
+            <description>Тень для элементов при наведении</description>
+        </property>
+        
+        <!-- Отступы -->
+        <property property_id="spacingUnit" data_type="integer" default_value="8">
+            <title>Базовый отступ</title>
+            <description>Базовый размер отступов в пикселях</description>
+        </property>
+        
+        <!-- Настройки заголовков -->
+        <property property_id="headingFontWeight" data_type="string" default_value="700">
+            <title>Жирность заголовков</title>
+            <description>Жирность шрифта заголовков</description>
+        </property>
+        
+        <!-- Цвета состояний -->
+        <property property_id="colorPaletteSuccess" data_type="color" default_value="#4caf50">
+            <title>Цвет успеха</title>
+            <description>Цвет для успешных операций</description>
+        </property>
+        
+        <property property_id="colorPaletteWarning" data_type="color" default_value="#ff9800">
+            <title>Цвет предупреждения</title>
+            <description>Цвет для предупреждений</description>
+        </property>
+        
+        <property property_id="colorPaletteError" data_type="color" default_value="#f44336">
+            <title>Цвет ошибки</title>
+            <description>Цвет для ошибок</description>
+        </property>
+        
+        <!-- Настройки форума -->
+        <property property_id="contentBackground" data_type="color" default_value="#1a1a2e">
+            <title>Фон контента</title>
+            <description>Фон основного контента</description>
+        </property>
+        
+        <property property_id="headerBackground" data_type="color" default_value="#16213e">
+            <title>Фон заголовка</title>
+            <description>Фон шапки форума</description>
+        </property>
+        
+        <property property_id="footerBackground" data_type="color" default_value="#0f3460">
+            <title>Фон подвала</title>
+            <description>Фон подвала форума</description>
+        </property>
+        
+        <!-- Настройки навигации -->
+        <property property_id="navBackground" data_type="color" default_value="#16213e">
+            <title>Фон навигации</title>
+            <description>Фон панели навигации</description>
+        </property>
+        
+        <property property_id="navTextColor" data_type="color" default_value="#eeeeee">
+            <title>Цвет текста навигации</title>
+            <description>Цвет текста в навигации</description>
+        </property>
+        
+        <property property_id="navHoverBackground" data_type="color" default_value="#e94560">
+            <title>Фон навигации при наведении</title>
+            <description>Фон элементов навигации при наведении</description>
+        </property>
+        
+        <!-- Настройки карточек -->
+        <property property_id="cardBackground" data_type="color" default_value="#1a1a2e">
+            <title>Фон карточек</title>
+            <description>Фон для карточек и блоков</description>
+        </property>
+        
+        <property property_id="cardBorder" data_type="color" default_value="#2a2a3e">
+            <title>Граница карточек</title>
+            <description>Цвет границы карточек</description>
+        </property>
+        
+        <!-- Настройки постов -->
+        <property property_id="postBackground" data_type="color" default_value="#1a1a2e">
+            <title>Фон постов</title>
+            <description>Фон сообщений</description>
+        </property>
+        
+        <property property_id="postAlternateBackground" data_type="color" default_value="#16213e">
+            <title>Альтернативный фон постов</title>
+            <description>Фон для чередующихся постов</description>
+        </property>
+        
+        <!-- Настройки аватаров -->
+        <property property_id="avatarBorder" data_type="color" default_value="#e94560">
+            <title>Граница аватара</title>
+            <description>Цвет границы аватаров</description>
+        </property>
+        
+        <property property_id="avatarBorderRadius" data_type="integer" default_value="50">
+            <title>Радиус скругления аватара</title>
+            <description>Радиус скругления для аватаров (для круглых)</description>
+        </property>
+    </properties>
+    
+    <templates>
+        <template type="public" title="extra.less" addon_id="XenForo">
+            <version>1.0.0</version>
+            <template><![CDATA[
+// ============================================
+// Игровой стиль для XenForo
+// Автор: @MarkusGarantor (Telegram)
+// Версия: 1.0.0
+// ============================================
+
+// Импорт основных стилей XenForo
+@import "public:core.less";
+
+// Переменные цветовой схемы
+@colorPrimary: #e94560;
+@colorPrimaryHover: #ff6b7f;
+@colorBackground: #1a1a2e;
+@colorBackgroundSecondary: #16213e;
+@colorBackgroundTertiary: #0f3460;
+@colorText: #eeeeee;
+@colorTextLight: #ffffff;
+@colorLink: #4fc3f7;
+@colorLinkHover: #81d4fa;
+@colorBorder: #2a2a3e;
+@colorBorderLight: #3a3a4e;
+
+// Типографика
+@fontFamily: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+@fontSizeBase: 14px;
+
+// Отступы и размеры
+@spacingUnit: 8px;
+@borderRadius: 8px;
+@borderRadiusSmall: 4px;
+
+// Тени
+@boxShadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+@boxShadowHover: 0 6px 12px rgba(233, 69, 96, 0.3);
+
+// Применение цветов к основным элементам
+.xf-body {
+    background-color: @colorBackground;
+    color: @colorText;
+    font-family: @fontFamily;
+    font-size: @fontSizeBase;
+}
+
+// Заголовок
+.p-header {
+    background: linear-gradient(135deg, @colorBackgroundSecondary 0%, @colorBackgroundTertiary 100%);
+    border-bottom: 2px solid @colorPrimary;
+    box-shadow: @boxShadow;
+}
+
+// Навигация
+.p-nav {
+    background-color: @colorBackgroundSecondary;
+    
+    .p-navEl-link {
+        color: @colorText;
+        transition: all 0.3s ease;
+        
+        &:hover {
+            background-color: @colorPrimary;
+            color: @colorTextLight;
+        }
+    }
+}
+
+// Карточки и блоки
+.block {
+    background-color: @colorBackground;
+    border: 1px solid @colorBorder;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadow;
+    transition: box-shadow 0.3s ease;
+    
+    &:hover {
+        box-shadow: @boxShadowHover;
+    }
+}
+
+// Кнопки
+.button {
+    background-color: @colorPrimary;
+    color: @colorTextLight;
+    border-radius: @borderRadiusSmall;
+    border: none;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background-color: @colorPrimaryHover;
+        transform: translateY(-2px);
+        box-shadow: @boxShadowHover;
+    }
+}
+
+// Ссылки
+a {
+    color: @colorLink;
+    transition: color 0.3s ease;
+    
+    &:hover {
+        color: @colorLinkHover;
+    }
+}
+
+// Посты
+.message {
+    background-color: @colorBackground;
+    border-left: 3px solid @colorPrimary;
+    border-radius: @borderRadius;
+    margin-bottom: @spacingUnit * 2;
+    
+    &:nth-child(even) {
+        background-color: @colorBackgroundSecondary;
+    }
+}
+
+// Аватары
+.avatar {
+    border: 2px solid @colorPrimary;
+    border-radius: 50%;
+    box-shadow: @boxShadow;
+}
+
+// Формы
+.formRow {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+        background-color: @colorBackgroundSecondary;
+        border: 1px solid @colorBorder;
+        color: @colorText;
+        border-radius: @borderRadiusSmall;
+        
+        &:focus {
+            border-color: @colorPrimary;
+            box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2);
+        }
+    }
+}
+
+// Подвал
+.p-footer {
+    background-color: @colorBackgroundTertiary;
+    color: @colorText;
+    border-top: 2px solid @colorPrimary;
+}
+
+// Скроллбар
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: @colorBackgroundSecondary;
+}
+
+::-webkit-scrollbar-thumb {
+    background: @colorPrimary;
+    border-radius: 5px;
+    
+    &:hover {
+        background: @colorPrimaryHover;
+    }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+    .p-header,
+    .p-nav {
+        padding: @spacingUnit;
+    }
+    
+    .block {
+        margin: @spacingUnit;
+    }
+}
+
+// Анимации
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.loading {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+// Игровые элементы
+.gaming-badge {
+    background: linear-gradient(135deg, @colorPrimary 0%, @colorPrimaryHover 100%);
+    color: @colorTextLight;
+    padding: @spacingUnit / 2 @spacingUnit;
+    border-radius: @borderRadiusSmall;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: @fontSizeBase * 0.85;
+    box-shadow: @boxShadow;
+}
+            ]]></template>
+        </template>
+    </templates>
+</style>
