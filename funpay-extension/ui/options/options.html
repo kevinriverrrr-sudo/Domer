@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Настройки - FunPay Ultimate Pro</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-content">
+        <h1>🚀 FunPay Ultimate Pro - Настройки</h1>
+        <p>Настройка всех модулей и функций расширения</p>
+      </div>
+      <div class="header-actions">
+        <button id="btn-import" class="btn btn-secondary">📥 Импорт</button>
+        <button id="btn-export" class="btn btn-secondary">📤 Экспорт</button>
+        <button id="btn-save" class="btn btn-primary">💾 Сохранить</button>
+      </div>
+    </header>
+
+    <nav class="sidebar">
+      <button class="sidebar-item active" data-section="general">
+        <span>⚙️</span> Общие
+      </button>
+      <button class="sidebar-item" data-section="autoresponder">
+        <span>💬</span> Автоответчик
+      </button>
+      <button class="sidebar-item" data-section="autopurchase">
+        <span>🛒</span> Автозакупка
+      </button>
+      <button class="sidebar-item" data-section="lotbooster">
+        <span>📈</span> Поднятие лотов
+      </button>
+      <button class="sidebar-item" data-section="price">
+        <span>💰</span> Управление ценами
+      </button>
+      <button class="sidebar-item" data-section="competitor">
+        <span>🔍</span> Конкуренты
+      </button>
+      <button class="sidebar-item" data-section="complaints">
+        <span>⚠️</span> Автожалобы
+      </button>
+      <button class="sidebar-item" data-section="security">
+        <span>🛡️</span> Безопасность
+      </button>
+      <button class="sidebar-item" data-section="notifications">
+        <span>🔔</span> Уведомления
+      </button>
+      <button class="sidebar-item" data-section="analytics">
+        <span>📊</span> Аналитика
+      </button>
+      <button class="sidebar-item" data-section="ui">
+        <span>🎨</span> Интерфейс
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- Общие настройки -->
+      <section id="section-general" class="settings-section active">
+        <h2>Общие настройки</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="setting-enabled">
+            <span>Включить расширение</span>
+          </label>
+          <p class="setting-description">Основной переключатель расширения</p>
+        </div>
+
+        <div class="setting-group">
+          <label>Язык интерфейса</label>
+          <select id="setting-language">
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label>Тема оформления</label>
+          <select id="setting-theme">
+            <option value="auto">Авто</option>
+            <option value="light">Светлая</option>
+            <option value="dark">Темная</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Автоответчик -->
+      <section id="section-autoresponder" class="settings-section">
+        <h2>Автоответчик</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autoresponder-enabled">
+            <span>Включить автоответчик</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label>Задержка перед ответом (секунды)</label>
+          <div class="input-group">
+            <input type="number" id="autoresponder-delay-min" min="1" max="60" value="2">
+            <span>-</span>
+            <input type="number" id="autoresponder-delay-max" min="1" max="60" value="5">
+          </div>
+          <p class="setting-description">Случайная задержка для имитации человека</p>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autoresponder-working-hours">
+            <span>Использовать рабочие часы</span>
+          </label>
+          <div class="input-group">
+            <input type="time" id="autoresponder-start" value="09:00">
+            <span>-</span>
+            <input type="time" id="autoresponder-end" value="21:00">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>Шаблоны ответов</h3>
+          <div id="templates-list"></div>
+          <button id="btn-add-template" class="btn btn-secondary">+ Добавить шаблон</button>
+        </div>
+      </section>
+
+      <!-- Автозакупка -->
+      <section id="section-autopurchase" class="settings-section">
+        <h2>Автозакупка</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autopurchase-enabled">
+            <span>Включить автозакупку</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label>Максимальная цена</label>
+          <input type="number" id="autopurchase-max-price" min="0" step="10" value="1000">
+          <p class="setting-description">Максимальная цена для автоматической покупки</p>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="autopurchase-notifications">
+            <span>Уведомления о покупках</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <h3>Фильтры покупки</h3>
+          <div id="purchase-filters-list"></div>
+          <button id="btn-add-filter" class="btn btn-secondary">+ Добавить фильтр</button>
+        </div>
+      </section>
+
+      <!-- Поднятие лотов -->
+      <section id="section-lotbooster" class="settings-section">
+        <h2>Поднятие лотов</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="lotbooster-enabled">
+            <span>Включить автоматическое поднятие</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label>Интервал поднятия (минуты)</label>
+          <input type="number" id="lotbooster-interval" min="30" max="1440" value="60">
+          <p class="setting-description">Как часто поднимать лоты</p>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="lotbooster-random">
+            <span>Случайная задержка</span>
+          </label>
+          <p class="setting-description">Добавляет случайную задержку до 10 минут</p>
+        </div>
+
+        <div class="setting-group">
+          <h3>Отслеживаемые лоты</h3>
+          <div id="lots-list"></div>
+          <button id="btn-add-lot" class="btn btn-secondary">+ Добавить лот</button>
+        </div>
+      </section>
+
+      <!-- Безопасность -->
+      <section id="section-security" class="settings-section">
+        <h2>Безопасность</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="security-scam-detection">
+            <span>Детектор мошенников</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="security-auto-block">
+            <span>Автоблокировка подозрительных</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <h3>Черный список</h3>
+          <div id="blacklist"></div>
+          <button id="btn-add-blacklist" class="btn btn-secondary">+ Добавить в черный список</button>
+        </div>
+
+        <div class="setting-group">
+          <h3>Белый список</h3>
+          <div id="whitelist"></div>
+          <button id="btn-add-whitelist" class="btn btn-secondary">+ Добавить в белый список</button>
+        </div>
+      </section>
+
+      <!-- Уведомления -->
+      <section id="section-notifications" class="settings-section">
+        <h2>Уведомления</h2>
+        
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-enabled">
+            <span>Включить уведомления</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-sound">
+            <span>Звуковые уведомления</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-desktop">
+            <span>Уведомления на рабочем столе</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <h3>Уведомлять о:</h3>
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-orders">
+            <span>Новые заказы</span>
+          </label>
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-messages">
+            <span>Новые сообщения</span>
+          </label>
+          <label class="setting-label">
+            <input type="checkbox" id="notifications-price-changes">
+            <span>Изменения цен</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Другие секции... -->
+      <section id="section-price" class="settings-section">
+        <h2>Управление ценами</h2>
+        <p>Настройки автоматического управления ценами</p>
+      </section>
+
+      <section id="section-competitor" class="settings-section">
+        <h2>Мониторинг конкурентов</h2>
+        <p>Отслеживание и анализ конкурентов</p>
+      </section>
+
+      <section id="section-complaints" class="settings-section">
+        <h2>Автожалобы</h2>
+        <p>Автоматическая подача жалоб</p>
+      </section>
+
+      <section id="section-analytics" class="settings-section">
+        <h2>Аналитика</h2>
+        <p>Настройки аналитики и статистики</p>
+      </section>
+
+      <section id="section-ui" class="settings-section">
+        <h2>Интерфейс</h2>
+        <p>Настройки внешнего вида</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+/**
+ * FunPay Ultimate Pro - Injected Styles
+ * Стили, внедряемые на страницы FunPay
+ */
+
+/* Панель управления */
+#funpay-pro-panel {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Быстрые действия */
+.fp-quick-actions button {
+  transition: all 0.2s ease;
+}
+
+.fp-quick-actions button:hover {
+  transform: scale(1.1);
+}
+
+/* Улучшенная навигация */
+.fp-enhanced-nav {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Быстрые фильтры */
+.fp-quick-filters {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Баджи безопасности */
+.funpay-security-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Подозрительные пользователи */
+.funpay-suspicious-badge {
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Уведомления на странице */
+.funpay-notification {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.funpay-notification-info {
+  background: #3498db;
+}
+
+.funpay-notification-success {
+  background: #2ecc71;
+}
+
+.funpay-notification-warning {
+  background: #f39c12;
+}
+
+.funpay-notification-error {
+  background: #e74c3c;
+}
+
+.funpay-notification-critical {
+  background: #c0392b;
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Улучшенные элементы товаров */
+.fp-enhanced {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Статистический баннер */
+.fp-stats-banner {
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Индикатор статуса */
+#fp-status-indicator {
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Кнопка прокрутки вверх */
+#fp-scroll-top:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* Глобальные улучшения */
+.fp-enhanced-button {
+  transition: all 0.3s ease;
+}
+
+.fp-enhanced-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Темная тема */
+body.fp-dark-theme {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.fp-dark-theme .fp-enhanced,
+body.fp-dark-theme .fp-stats-banner {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+/* Анимации загрузки */
+.fp-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #667eea;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Скрытие оригинальных элементов (если нужно) */
+.fp-hidden {
+  display: none !important;
+}
+
+/* Подсветка важных элементов */
+.fp-highlight {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  animation: glow 1.5s infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #667eea;
+  }
+  50% {
+    box-shadow: 0 0 20px #667eea;
+  }
+}
+
+/* Компактный режим */
+body.fp-compact-mode .tc-item,
+body.fp-compact-mode .offer-list-item {
+  padding: 8px !important;
+  margin: 5px 0 !important;
+}
+
+body.fp-compact-mode .tc-title,
+body.fp-compact-mode .offer-title {
+  font-size: 13px !important;
+}
+
+/* Accessibility улучшения */
+.fp-accessible-focus:focus {
+  outline: 3px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Тултипы */
+.fp-tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  z-index: 10000;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: tooltipFadeIn 0.2s;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fp-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #333;
+}
