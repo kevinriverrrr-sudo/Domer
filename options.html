@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Test Autofill - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="8" width="24" height="16" rx="3" stroke="#635BFF" stroke-width="2"/>
+          <rect x="4" y="12" width="24" height="6" fill="#635BFF"/>
+        </svg>
+        Stripe Test Autofill Settings
+      </h1>
+      <p class="subtitle">Configure test card scenarios and billing profiles</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Test Card Scenario</h2>
+        <p class="description">Choose which Stripe official test card to use</p>
+        
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="cardScenario" value="success">
+            <div class="radio-content">
+              <strong>Success (No Authentication)</strong>
+              <span class="card-number">4242 4242 4242 4242</span>
+              <p>Payment succeeds without authentication</p>
+            </div>
+          </label>
+          
+          <label class="radio-label">
+            <input type="radio" name="cardScenario" value="success_3ds">
+            <div class="radio-content">
+              <strong>Success with 3DS</strong>
+              <span class="card-number">4000 0025 0000 3155</span>
+              <p>Requires authentication (3D Secure 2)</p>
+            </div>
+          </label>
+          
+          <label class="radio-label">
+            <input type="radio" name="cardScenario" value="decline_generic">
+            <div class="radio-content">
+              <strong>Decline (Generic)</strong>
+              <span class="card-number">4000 0000 0000 0002</span>
+              <p>Always declined with generic decline code</p>
+            </div>
+          </label>
+          
+          <label class="radio-label">
+            <input type="radio" name="cardScenario" value="decline_insufficient">
+            <div class="radio-content">
+              <strong>Decline (Insufficient Funds)</strong>
+              <span class="card-number">4000 0000 0000 9995</span>
+              <p>Declined due to insufficient funds</p>
+            </div>
+          </label>
+          
+          <label class="radio-label">
+            <input type="radio" name="cardScenario" value="decline_fraud">
+            <div class="radio-content">
+              <strong>Decline (Fraud)</strong>
+              <span class="card-number">4100 0000 0000 0019</span>
+              <p>Declined due to suspected fraud</p>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Billing Profile</h2>
+        <p class="description">Default billing information to use</p>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" placeholder="John Doe">
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="john.doe@example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" placeholder="+1 (555) 123-4567">
+          </div>
+          
+          <div class="form-group">
+            <label for="country">Country</label>
+            <select id="country">
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="NL">Netherlands</option>
+              <option value="SE">Sweden</option>
+            </select>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="line1">Address Line 1</label>
+            <input type="text" id="line1" placeholder="123 Main Street">
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="line2">Address Line 2 (Optional)</label>
+            <input type="text" id="line2" placeholder="Apt 4B">
+          </div>
+          
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" placeholder="San Francisco">
+          </div>
+          
+          <div class="form-group">
+            <label for="state">State / Region</label>
+            <input type="text" id="state" placeholder="CA">
+          </div>
+          
+          <div class="form-group">
+            <label for="postal_code">Postal Code</label>
+            <input type="text" id="postal_code" placeholder="94102">
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Additional Options</h2>
+        
+        <label class="checkbox-label">
+          <input type="checkbox" id="randomizeProfile">
+          <div class="checkbox-content">
+            <strong>Randomize Profile</strong>
+            <p>Use a different billing profile for each autofill</p>
+          </div>
+        </label>
+        
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoSubmit">
+          <div class="checkbox-content">
+            <strong>Auto-Submit Form</strong>
+            <p>Automatically submit the payment form after filling</p>
+          </div>
+        </label>
+      </section>
+
+      <div class="actions">
+        <button id="saveBtn" class="btn btn-primary">Save Settings</button>
+        <button id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </main>
+
+    <footer>
+      <div class="warning">
+        <strong>⚠️ Test Mode Only</strong>
+        <p>This extension only works with Stripe test mode. It will automatically block any attempts to use it in live mode.</p>
+      </div>
+      
+      <div class="info">
+        <p>Using official Stripe test card numbers from: <a href="https://stripe.com/docs/testing" target="_blank">stripe.com/docs/testing</a></p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Extension packaging
+*.zip
+*.crx
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+
+# Node (if needed later)
+node_modules/
+package-lock.json
+
+# Temp files
+*.tmp
+temp/

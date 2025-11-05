@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Test Autofill</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header>
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="5" width="20" height="14" rx="2" stroke="#635BFF" stroke-width="2"/>
+          <rect x="2" y="8" width="20" height="5" fill="#635BFF"/>
+        </svg>
+        Stripe Test Autofill
+      </h1>
+    </header>
+
+    <main>
+      <div class="info-section">
+        <p class="info-text">
+          <strong>How to use:</strong>
+        </p>
+        <ol class="instructions">
+          <li>Navigate to <strong>cursor.com</strong></li>
+          <li>Look for the floating button in the bottom-right</li>
+          <li>When on a Stripe checkout page, click the button</li>
+          <li>Or use keyboard shortcut: <kbd>Ctrl+Shift+A</kbd></li>
+        </ol>
+      </div>
+
+      <div class="warning-section">
+        <strong>⚠️ Test Mode Only</strong>
+        <p>This extension only works with Stripe test mode and will block any attempts to use it in live mode.</p>
+      </div>
+
+      <div class="action-section">
+        <button id="openOptions" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M6.5 2a.5.5 0 000 1h3a.5.5 0 000-1h-3zM8 5a3 3 0 100 6 3 3 0 000-6zm-1.5 8a.5.5 0 000 1h3a.5.5 0 000-1h-3z" fill="currentColor"/>
+          </svg>
+          Open Settings
+        </button>
+      </div>
+    </main>
+
+    <footer>
+      <p class="version">Version 1.0.0</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
