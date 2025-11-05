@@ -7,141 +7,241 @@ local encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
+local ffi = require 'ffi'
+
+local version = '1.0.0'
+
 local config = {
-    enabled = true,
-    timeout = 120000, -- время в мс до активации (по умолчанию 2 минуты)
-    action_type = 1, -- 1 - движение, 2 - прыжок, 3 - анимация
-    move_distance = 1.0, -- расстояние для движения
-    show_notification = true,
-    keybind = 0 -- 0 = нет клавиши, используйте VK коды
+    enabled = false,
+    interval = 5000, -- интервал в миллисекундах
+    useCameraRotation = true,
+    useAnimation = true,
+    useMovement = false,
+    randomDelay = true,
+    minDelay = 3000,
+    maxDelay = 8000
 }
 
-local config_path = getWorkingDirectory() .. '\\config\\anti_afk.ini'
+local menuOpen = false
+local configPath = getWorkingDirectory() .. '/configs/anti_afk.ini'
 
-local function loadConfig()
-    if doesFileExist(config_path) then
-        local ini = inicfg.load(config_path)
-        if ini and ini.main then
-            config.enabled = ini.main.enabled or config.enabled
-            config.timeout = ini.main.timeout or config.timeout
-            config.action_type = ini.main.action_type or config.action_type
-            config.move_distance = ini.main.move_distance or config.move_distance
-            config.show_notification = ini.main.show_notification ~= nil and ini.main.show_notification or config.show_notification
-            config.keybind = ini.main.keybind or config.keybind
+-- ImGui окно
+local window = imgui.new.bool(false)
+local enabled = imgui.new.bool(config.enabled)
+local interval = imgui.new.int(config.interval)
+local useCameraRotation = imgui.new.bool(config.useCameraRotation)
+local useAnimation = imgui.new.bool(config.useAnimation)
+local useMovement = imgui.new.bool(config.useMovement)
+local randomDelay = imgui.new.bool(config.randomDelay)
+local minDelay = imgui.new.int(config.minDelay)
+local maxDelay = imgui.new.int(config.maxDelay)
+
+local lastActionTime = 0
+local nextActionTime = 0
+
+-- Загрузка конфигурации
+function loadConfig()
+    if doesFileExist(configPath) then
+        local cfg = inicfg.load(nil, configPath)
+        if cfg and cfg.anti_afk then
+            config.enabled = cfg.anti_afk.enabled or config.enabled
+            config.interval = cfg.anti_afk.interval or config.interval
+            config.useCameraRotation = cfg.anti_afk.useCameraRotation ~= nil and cfg.anti_afk.useCameraRotation or config.useCameraRotation
+            config.useAnimation = cfg.anti_afk.useAnimation ~= nil and cfg.anti_afk.useAnimation or config.useAnimation
+            config.useMovement = cfg.anti_afk.useMovement ~= nil and cfg.anti_afk.useMovement or config.useMovement
+            config.randomDelay = cfg.anti_afk.randomDelay ~= nil and cfg.anti_afk.randomDelay or config.randomDelay
+            config.minDelay = cfg.anti_afk.minDelay or config.minDelay
+            config.maxDelay = cfg.anti_afk.maxDelay or config.maxDelay
+            
+            -- Обновляем ImGui переменные
+            enabled.v = config.enabled
+            interval.v = config.interval
+            useCameraRotation.v = config.useCameraRotation
+            useAnimation.v = config.useAnimation
+            useMovement.v = config.useMovement
+            randomDelay.v = config.randomDelay
+            minDelay.v = config.minDelay
+            maxDelay.v = config.maxDelay
         end
     end
 end
 
-local function saveConfig()
-    local ini = inicfg.new({
-        main = config
-    })
-    inicfg.save(ini, config_path)
+-- Сохранение конфигурации
+function saveConfig()
+    local cfg = {
+        anti_afk = {
+            enabled = config.enabled,
+            interval = config.interval,
+            useCameraRotation = config.useCameraRotation,
+            useAnimation = config.useAnimation,
+            useMovement = config.useMovement,
+            randomDelay = config.randomDelay,
+            minDelay = config.minDelay,
+            maxDelay = config.maxDelay
+        }
+    }
+    inicfg.save(cfg, configPath)
 end
 
-local last_activity = 0
-local is_afk_active = false
-
-local function getCurrentTime()
-    return os.clock() * 1000
-end
-
-local function updateActivity()
-    last_activity = getCurrentTime()
-    is_afk_active = false
-end
-
-local function performAntiAfkAction()
-    if is_afk_active then return end
-    
-    is_afk_active = true
-    
-    if config.action_type == 1 then -- Движение
-        local x, y, z = getCharCoordinates(PLAYER_PED)
-        local angle = getCharHeading(PLAYER_PED)
-        local rad = math.rad(angle)
-        local new_x = x + math.sin(rad) * config.move_distance
-        local new_y = y + math.cos(rad) * config.move_distance
-        
-        setCharCoordinates(PLAYER_PED, new_x, new_y, z)
-        
-        if config.show_notification then
-            sampAddChatMessage(u8:decode('[Anti-AFK] Выполнено движение'), 0x00FF00)
-        end
-    elseif config.action_type == 2 then -- Прыжок
-        taskJumpChar(PLAYER_PED, false)
-        
-        if config.show_notification then
-            sampAddChatMessage(u8:decode('[Anti-AFK] Выполнен прыжок'), 0x00FF00)
-        end
-    elseif config.action_type == 3 then -- Анимация
-        if not isCharPlayingAnim(PLAYER_PED, 'PED', 'IDLE_CHAT') then
-            taskPlayAnimSecondary(PLAYER_PED, 'PED', 'IDLE_CHAT', 4.0, false, false, false, 0, 0)
-            lua_thread.create(function()
-                wait(2000)
-                clearCharTasksImmediately(PLAYER_PED)
-            end)
-        end
-        
-        if config.show_notification then
-            sampAddChatMessage(u8:decode('[Anti-AFK] Выполнена анимация'), 0x00FF00)
-        end
-    end
-    
-    updateActivity()
-end
-
--- Отслеживание активности игрока
-function se.onSendChat(message)
-    updateActivity()
-end
-
-function se.onSendCommand(command)
-    updateActivity()
-end
-
-function se.onSendKeyUp(key)
-    updateActivity()
-end
-
-function se.onSendClick()
-    updateActivity()
-end
-
-function se.onServerMessage(color, text)
-    updateActivity()
-end
-
+-- Инициализация при загрузке скрипта
 function main()
-    loadConfig()
-    last_activity = getCurrentTime()
+    if not isSampfuncsLoaded() or not isSampLoaded() then return end
+    while not isSampAvailable() do wait(100) end
     
     sampRegisterChatCommand('afk', function()
-        config.enabled = not config.enabled
-        saveConfig()
-        local status = config.enabled and u8:decode('включен') or u8:decode('выключен')
-        sampAddChatMessage(u8:decode('[Anti-AFK] ' .. status), 0x00FF00)
+        menuOpen = not menuOpen
+        window.v = menuOpen
     end)
     
-    sampRegisterChatCommand('afkconfig', function()
-        sampAddChatMessage(u8:decode('[Anti-AFK] Настройки:'), 0x00FF00)
-        sampAddChatMessage(u8:decode('Включен: ' .. tostring(config.enabled)), 0xFFFFFF)
-        sampAddChatMessage(u8:decode('Таймаут: ' .. config.timeout .. ' мс'), 0xFFFFFF)
-        sampAddChatMessage(u8:decode('Тип действия: ' .. config.action_type .. ' (1-движение, 2-прыжок, 3-анимация)'), 0xFFFFFF)
-        sampAddChatMessage(u8:decode('Расстояние движения: ' .. config.move_distance), 0xFFFFFF)
-        sampAddChatMessage(u8:decode('Настройки в файле: ' .. config_path), 0xFFFFFF)
-    end)
+    loadConfig()
     
-    while true do
-        wait(1000)
-        
-        if config.enabled then
-            local current_time = getCurrentTime()
-            local time_since_activity = current_time - last_activity
+    lua_thread.create(function()
+        while true do
+            wait(0)
             
-            if time_since_activity >= config.timeout then
-                performAntiAfkAction()
+            if config.enabled and isSampAvailable() then
+                local currentTime = os.clock() * 1000
+                
+                if currentTime >= nextActionTime then
+                    -- Поворот камеры (незаметное движение мыши)
+                    if config.useCameraRotation then
+                        local angle = math.random(0, 360)
+                        local mouseX = math.cos(math.rad(angle)) * 0.5
+                        local mouseY = math.sin(math.rad(angle)) * 0.5
+                        setCameraBehindPlayer()
+                        -- Симуляция движения мыши через изменение угла камеры
+                        local x, y, z = getCharCoordinates(PLAYER_PED)
+                        local heading = getCharHeading(PLAYER_PED)
+                        setCharHeading(PLAYER_PED, (heading + mouseX) % 360)
+                    end
+                    
+                    -- Анимация через команду /me
+                    if config.useAnimation then
+                        local messages = {
+                            '*проверяет часы*',
+                            '*смотрит по сторонам*',
+                            '*поправляет одежду*',
+                            '*почесывает голову*'
+                        }
+                        local msg = messages[math.random(1, #messages)]
+                        sampSendChat('/me ' .. msg)
+                    end
+                    
+                    -- Небольшое движение (минимальное смещение позиции)
+                    if config.useMovement then
+                        local x, y, z = getCharCoordinates(PLAYER_PED)
+                        local offsetX = (math.random() - 0.5) * 0.001
+                        local offsetY = (math.random() - 0.5) * 0.001
+                        setCharCoordinates(PLAYER_PED, x + offsetX, y + offsetY, z)
+                        wait(5)
+                        setCharCoordinates(PLAYER_PED, x, y, z)
+                    end
+                    
+                    -- Вычисляем следующее время действия
+                    if config.randomDelay then
+                        nextActionTime = currentTime + math.random(config.minDelay, config.maxDelay)
+                    else
+                        nextActionTime = currentTime + config.interval
+                    end
+                    
+                    lastActionTime = currentTime
+                end
             end
         end
-    end
+    end)
+    
+    -- Регистрация callback для ImGui
+    imgui.OnFrame(function()
+        if not window.v then return end
+        
+        imgui.SetNextWindowSize(imgui.ImVec2(400, 450), imgui.Cond.FirstUseEver)
+        imgui.Begin(u8('Anti-AFK v' .. version), window, imgui.WindowFlags.None)
+        
+        -- Включение/выключение
+        if imgui.Checkbox(u8('Включить Anti-AFK'), enabled) then
+            config.enabled = enabled.v
+            saveConfig()
+            if config.enabled then
+                nextActionTime = os.clock() * 1000
+            end
+        end
+        
+        imgui.Separator()
+        
+        -- Интервал
+        imgui.Text(u8('Интервал (мс):'))
+        if imgui.InputInt(u8('##interval'), interval) then
+            if interval.v < 1000 then interval.v = 1000 end
+            if interval.v > 60000 then interval.v = 60000 end
+            config.interval = interval.v
+            saveConfig()
+        end
+        
+        imgui.Separator()
+        
+        -- Случайная задержка
+        if imgui.Checkbox(u8('Случайная задержка'), randomDelay) then
+            config.randomDelay = randomDelay.v
+            saveConfig()
+        end
+        
+        if config.randomDelay then
+            imgui.Text(u8('Минимальная задержка (мс):'))
+            if imgui.InputInt(u8('##mindelay'), minDelay) then
+                if minDelay.v < 1000 then minDelay.v = 1000 end
+                if minDelay.v > config.maxDelay then minDelay.v = config.maxDelay end
+                config.minDelay = minDelay.v
+                saveConfig()
+            end
+            
+            imgui.Text(u8('Максимальная задержка (мс):'))
+            if imgui.InputInt(u8('##maxdelay'), maxDelay) then
+                if maxDelay.v < config.minDelay then maxDelay.v = config.minDelay end
+                if maxDelay.v > 60000 then maxDelay.v = 60000 end
+                config.maxDelay = maxDelay.v
+                saveConfig()
+            end
+        end
+        
+        imgui.Separator()
+        
+        -- Поворот камеры
+        if imgui.Checkbox(u8('Поворот камеры'), useCameraRotation) then
+            config.useCameraRotation = useCameraRotation.v
+            saveConfig()
+        end
+        
+        -- Анимация
+        if imgui.Checkbox(u8('Использовать анимацию (/me)'), useAnimation) then
+            config.useAnimation = useAnimation.v
+            saveConfig()
+        end
+        
+        -- Движение
+        if imgui.Checkbox(u8('Использовать движение'), useMovement) then
+            config.useMovement = useMovement.v
+            saveConfig()
+        end
+        
+        imgui.Separator()
+        
+        -- Статус
+        if config.enabled then
+            local timeUntilNext = math.max(0, math.floor((nextActionTime - os.clock() * 1000) / 1000))
+            imgui.TextColored(imgui.ImVec4(0, 1, 0, 1), u8('Статус: Активен'))
+            imgui.Text(u8('Следующее действие через: ' .. timeUntilNext .. ' сек'))
+        else
+            imgui.TextColored(imgui.ImVec4(1, 0, 0, 1), u8('Статус: Выключен'))
+        end
+        
+        imgui.Separator()
+        
+        -- Кнопка закрытия
+        if imgui.Button(u8('Закрыть'), imgui.ImVec2(-1, 0)) then
+            window.v = false
+            menuOpen = false
+        end
+        
+        imgui.End()
+    end)
 end
