@@ -127,7 +127,208 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, reply_markup=main_menu_keyboard())
 
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔐 Введите пароль для доступа к админ панели:")
+    data = await load_data()
+    user_id = update.effective_user.id
+    
+    # Проверяем, является ли пользователь админом
+    if str(user_id) in data.get("admin_users", []):
+        await update.message.reply_text("🔐 Админ панель:", reply_markup=admin_menu_keyboard())
+    else:
+        await update.message.reply_text("🔐 Введите пароль для доступа к админ панели:")
+
+async def transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args or len(context.args) < 3:
+        await update.message.reply_text("❌ Формат: /transfer @username amount currency\nПример: /transfer @user 100 diamond")
+        return
+    
+    data = await load_data()
+    user_id = update.effective_user.id
+    user = get_user(user_id, data)
+    
+    try:
+        target_username = context.args[0].replace("@", "")
+        amount = float(context.args[1])
+        currency = context.args[2].lower()
+        
+        # Найти пользователя по username
+        target_user_id = None
+        for uid, u in data['users'].items():
+            if u.get('username', '').lower() == target_username.lower():
+                target_user_id = uid
+                break
+        
+        if not target_user_id:
+            await update.message.reply_text("❌ Пользователь не найден!")
+            return
+        
+        target_user = get_user(int(target_user_id), data)
+        
+        if currency == "diamond":
+            if user['diamond'] >= amount:
+                user['diamond'] -= amount
+                target_user['diamond'] += amount
+                await update.message.reply_text(f"✅ Переведено {amount}💎 пользователю @{target_username}")
+            else:
+                await update.message.reply_text("❌ Недостаточно алмазов!")
+        elif currency == "gold":
+            if user['gold'] >= amount:
+                user['gold'] -= amount
+                target_user['gold'] += amount
+                await update.message.reply_text(f"✅ Переведено {amount}🪙 пользователю @{target_username}")
+            else:
+                await update.message.reply_text("❌ Недостаточно золота!")
+        elif currency == "crystal":
+            if user['crystal'] >= amount:
+                user['crystal'] -= amount
+                target_user['crystal'] += amount
+                await update.message.reply_text(f"✅ Переведено {amount}💠 пользователю @{target_username}")
+            else:
+                await update.message.reply_text("❌ Недостаточно кристаллов!")
+        else:
+            await update.message.reply_text("❌ Неверная валюта! Используйте: diamond, gold, crystal")
+        
+        await save_data(data)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
+async def add_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = await load_data()
+    user_id = update.effective_user.id
+    
+    if str(user_id) not in data.get("admin_users", []):
+        await update.message.reply_text("❌ У вас нет доступа к этой команде!")
+        return
+    
+    if not context.args or len(context.args) < 3:
+        await update.message.reply_text("❌ Формат: /add_currency @username amount currency")
+        return
+    
+    try:
+        target_username = context.args[0].replace("@", "")
+        amount = float(context.args[1])
+        currency = context.args[2].lower()
+        
+        target_user_id = None
+        for uid, u in data['users'].items():
+            if u.get('username', '').lower() == target_username.lower():
+                target_user_id = uid
+                break
+        
+        if not target_user_id:
+            await update.message.reply_text("❌ Пользователь не найден!")
+            return
+        
+        target_user = get_user(int(target_user_id), data)
+        
+        if currency == "diamond":
+            target_user['diamond'] += amount
+            await update.message.reply_text(f"✅ Добавлено {amount}💎 пользователю @{target_username}")
+        elif currency == "gold":
+            target_user['gold'] += amount
+            await update.message.reply_text(f"✅ Добавлено {amount}🪙 пользователю @{target_username}")
+        elif currency == "crystal":
+            target_user['crystal'] += amount
+            await update.message.reply_text(f"✅ Добавлено {amount}💠 пользователю @{target_username}")
+        else:
+            await update.message.reply_text("❌ Неверная валюта! Используйте: diamond, gold, crystal")
+            return
+        
+        await save_data(data)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
+async def del_currency(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = await load_data()
+    user_id = update.effective_user.id
+    
+    if str(user_id) not in data.get("admin_users", []):
+        await update.message.reply_text("❌ У вас нет доступа к этой команде!")
+        return
+    
+    if not context.args or len(context.args) < 3:
+        await update.message.reply_text("❌ Формат: /del_currency @username amount currency")
+        return
+    
+    try:
+        target_username = context.args[0].replace("@", "")
+        amount = float(context.args[1])
+        currency = context.args[2].lower()
+        
+        target_user_id = None
+        for uid, u in data['users'].items():
+            if u.get('username', '').lower() == target_username.lower():
+                target_user_id = uid
+                break
+        
+        if not target_user_id:
+            await update.message.reply_text("❌ Пользователь не найден!")
+            return
+        
+        target_user = get_user(int(target_user_id), data)
+        
+        if currency == "diamond":
+            if target_user['diamond'] >= amount:
+                target_user['diamond'] -= amount
+                await update.message.reply_text(f"✅ Удалено {amount}💎 у пользователя @{target_username}")
+            else:
+                await update.message.reply_text("❌ У пользователя недостаточно алмазов!")
+        elif currency == "gold":
+            if target_user['gold'] >= amount:
+                target_user['gold'] -= amount
+                await update.message.reply_text(f"✅ Удалено {amount}🪙 у пользователя @{target_username}")
+            else:
+                await update.message.reply_text("❌ У пользователя недостаточно золота!")
+        elif currency == "crystal":
+            if target_user['crystal'] >= amount:
+                target_user['crystal'] -= amount
+                await update.message.reply_text(f"✅ Удалено {amount}💠 у пользователя @{target_username}")
+            else:
+                await update.message.reply_text("❌ У пользователя недостаточно кристаллов!")
+        else:
+            await update.message.reply_text("❌ Неверная валюта! Используйте: diamond, gold, crystal")
+            return
+        
+        await save_data(data)
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
+async def set_trend(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = await load_data()
+    user_id = update.effective_user.id
+    
+    if str(user_id) not in data.get("admin_users", []):
+        await update.message.reply_text("❌ У вас нет доступа к этой команде!")
+        return
+    
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text("❌ Формат: /set_trend currency value")
+        return
+    
+    try:
+        currency = context.args[0].lower()
+        value = float(context.args[1])
+        
+        if currency not in data['trends']:
+            await update.message.reply_text("❌ Неверная валюта! Используйте: diamond, gold, crystal")
+            return
+        
+        data['trends'][currency] = value
+        await save_data(data)
+        await update.message.reply_text(f"✅ Тренд {currency} установлен: {value}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
+async def reset_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = await load_data()
+    user_id = update.effective_user.id
+    
+    if str(user_id) not in data.get("admin_users", []):
+        await update.message.reply_text("❌ У вас нет доступа к этой команде!")
+        return
+    
+    data['users'] = {}
+    await save_data(data)
+    await update.message.reply_text("✅ Все данные сброшены!")
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -479,148 +680,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("🔐 Админ панель:", reply_markup=admin_menu_keyboard())
         return
-    
-    # Проверка админ доступа
-    is_admin = str(user_id) in data.get("admin_users", [])
-    
-    # Обработка переводов
-    if text.startswith("/transfer"):
-        parts = text.split()
-        if len(parts) >= 4:
-            try:
-                target_username = parts[1].replace("@", "")
-                amount = float(parts[2])
-                currency = parts[3].lower()
-                
-                # Найти пользователя по username
-                target_user_id = None
-                for uid, u in data['users'].items():
-                    if u.get('username', '').lower() == target_username.lower():
-                        target_user_id = uid
-                        break
-                
-                if target_user_id:
-                    user = get_user(user_id, data)
-                    target_user = get_user(int(target_user_id), data)
-                    
-                    if currency == "diamond" and user['diamond'] >= amount:
-                        user['diamond'] -= amount
-                        target_user['diamond'] += amount
-                        await update.message.reply_text(f"✅ Переведено {amount}💎 пользователю @{target_username}")
-                    elif currency == "gold" and user['gold'] >= amount:
-                        user['gold'] -= amount
-                        target_user['gold'] += amount
-                        await update.message.reply_text(f"✅ Переведено {amount}🪙 пользователю @{target_username}")
-                    elif currency == "crystal" and user['crystal'] >= amount:
-                        user['crystal'] -= amount
-                        target_user['crystal'] += amount
-                        await update.message.reply_text(f"✅ Переведено {amount}💠 пользователю @{target_username}")
-                    else:
-                        await update.message.reply_text("❌ Недостаточно валюты!")
-                    await save_data(data)
-                else:
-                    await update.message.reply_text("❌ Пользователь не найден!")
-            except:
-                await update.message.reply_text("❌ Неверный формат команды!")
-        else:
-            await update.message.reply_text("❌ Формат: /transfer @username amount currency")
-        return
-    
-    # Админ команды
-    if text.startswith("/add_currency") and is_admin:
-        parts = text.split()
-        if len(parts) >= 4:
-            try:
-                target_username = parts[1].replace("@", "")
-                amount = float(parts[2])
-                currency = parts[3].lower()
-                
-                target_user_id = None
-                for uid, u in data['users'].items():
-                    if u.get('username', '').lower() == target_username.lower():
-                        target_user_id = uid
-                        break
-                
-                if target_user_id:
-                    target_user = get_user(int(target_user_id), data)
-                    if currency == "diamond":
-                        target_user['diamond'] += amount
-                        await update.message.reply_text(f"✅ Добавлено {amount}💎 пользователю @{target_username}")
-                    elif currency == "gold":
-                        target_user['gold'] += amount
-                        await update.message.reply_text(f"✅ Добавлено {amount}🪙 пользователю @{target_username}")
-                    elif currency == "crystal":
-                        target_user['crystal'] += amount
-                        await update.message.reply_text(f"✅ Добавлено {amount}💠 пользователю @{target_username}")
-                    await save_data(data)
-                else:
-                    await update.message.reply_text("❌ Пользователь не найден!")
-            except:
-                await update.message.reply_text("❌ Неверный формат команды!")
-        else:
-            await update.message.reply_text("❌ Формат: /add_currency @username amount currency")
-        return
-    
-    if text.startswith("/del_currency") and is_admin:
-        parts = text.split()
-        if len(parts) >= 4:
-            try:
-                target_username = parts[1].replace("@", "")
-                amount = float(parts[2])
-                currency = parts[3].lower()
-                
-                target_user_id = None
-                for uid, u in data['users'].items():
-                    if u.get('username', '').lower() == target_username.lower():
-                        target_user_id = uid
-                        break
-                
-                if target_user_id:
-                    target_user = get_user(int(target_user_id), data)
-                    if currency == "diamond" and target_user['diamond'] >= amount:
-                        target_user['diamond'] -= amount
-                        await update.message.reply_text(f"✅ Удалено {amount}💎 у пользователя @{target_username}")
-                    elif currency == "gold" and target_user['gold'] >= amount:
-                        target_user['gold'] -= amount
-                        await update.message.reply_text(f"✅ Удалено {amount}🪙 у пользователя @{target_username}")
-                    elif currency == "crystal" and target_user['crystal'] >= amount:
-                        target_user['crystal'] -= amount
-                        await update.message.reply_text(f"✅ Удалено {amount}💠 у пользователя @{target_username}")
-                    else:
-                        await update.message.reply_text("❌ Недостаточно валюты!")
-                    await save_data(data)
-                else:
-                    await update.message.reply_text("❌ Пользователь не найден!")
-            except:
-                await update.message.reply_text("❌ Неверный формат команды!")
-        else:
-            await update.message.reply_text("❌ Формат: /del_currency @username amount currency")
-        return
-    
-    if text.startswith("/set_trend") and is_admin:
-        parts = text.split()
-        if len(parts) >= 3:
-            try:
-                currency = parts[1].lower()
-                value = float(parts[2])
-                
-                if currency in data['trends']:
-                    data['trends'][currency] = value
-                    await save_data(data)
-                    await update.message.reply_text(f"✅ Тренд {currency} установлен: {value}")
-                else:
-                    await update.message.reply_text("❌ Неверная валюта! Используйте: diamond, gold, crystal")
-            except:
-                await update.message.reply_text("❌ Неверный формат команды!")
-        else:
-            await update.message.reply_text("❌ Формат: /set_trend currency value")
-        return
-    
-    if text == "/reset_all" and is_admin:
-        data['users'] = {}
-        await save_data(data)
-        await update.message.reply_text("✅ Все данные сброшены!")
-        return
 
 # Автоматический доход от майнинга
 async def mining_income(context: ContextTypes.DEFAULT_TYPE):
@@ -646,8 +705,16 @@ async def update_trends(context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     
+    # Команды
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
+    app.add_handler(CommandHandler("transfer", transfer))
+    app.add_handler(CommandHandler("add_currency", add_currency))
+    app.add_handler(CommandHandler("del_currency", del_currency))
+    app.add_handler(CommandHandler("set_trend", set_trend))
+    app.add_handler(CommandHandler("reset_all", reset_all))
+    
+    # Обработчики кнопок и сообщений
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     
