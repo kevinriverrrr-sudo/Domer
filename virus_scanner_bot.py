@@ -326,10 +326,44 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик загрузки файлов"""
-    file = update.message.document or update.message.photo[-1] if update.message.photo else None
+    # Проверяем различные типы файлов
+    file = None
+    file_name = None
+    
+    if update.message.document:
+        # Документы (APK, ZIP, EXE и т.д.)
+        file = update.message.document
+        file_name = file.file_name
+    elif update.message.video:
+        # Видео файлы
+        file = update.message.video
+        file_name = file.file_name or "video.mp4"
+    elif update.message.audio:
+        # Аудио файлы
+        file = update.message.audio
+        file_name = file.file_name or "audio.mp3"
+    elif update.message.voice:
+        # Голосовые сообщения
+        file = update.message.voice
+        file_name = "voice.ogg"
+    elif update.message.video_note:
+        # Кружочки (видео заметки)
+        file = update.message.video_note
+        file_name = "video_note.mp4"
+    elif update.message.animation:
+        # GIF и анимации
+        file = update.message.animation
+        file_name = file.file_name or "animation.gif"
+    elif update.message.photo:
+        # Фотографии (берем самое большое качество)
+        file = update.message.photo[-1]
+        file_name = "photo.jpg"
     
     if not file:
-        await update.message.reply_text("❌ Не удалось получить файл. Пожалуйста, отправьте файл как документ.")
+        await update.message.reply_text(
+            "❌ Не удалось получить файл.\n\n"
+            "Пожалуйста, отправьте файл как документ (APK, ZIP, EXE и другие форматы поддерживаются)."
+        )
         return
     
     # Проверяем размер файла
@@ -345,7 +379,11 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     try:
         # Скачиваем файл
         file_obj = await context.bot.get_file(file.file_id)
-        file_path = f"/tmp/{file.file_id}_{file.file_name or 'file'}"
+        # Используем имя файла если есть, иначе генерируем по file_id
+        safe_file_name = file_name or f"file_{file.file_id}"
+        # Убираем небезопасные символы из имени файла
+        safe_file_name = "".join(c for c in safe_file_name if c.isalnum() or c in "._-")
+        file_path = f"/tmp/{file.file_id}_{safe_file_name}"
         await file_obj.download_to_drive(file_path)
         
         # Инициализируем сканер
@@ -496,11 +534,25 @@ def main() -> None:
     # Создаем приложение
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
-    # Регистрируем обработчики
+    # Регистрируем обработчики (важен порядок!)
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_file))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_file))
+    
+    # Обработчики файлов (все типы)
+    # Используем комбинированный фильтр для всех типов медиа
+    file_filter = (
+        filters.Document.ALL |
+        filters.VIDEO |
+        filters.AUDIO |
+        filters.VOICE |
+        filters.VIDEO_NOTE |
+        filters.ANIMATION |
+        filters.PHOTO |
+        filters.Document.ALL
+    )
+    application.add_handler(MessageHandler(file_filter, handle_file))
+    
+    # Обработчик текстовых сообщений (должен быть последним)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # Запускаем бота
