@@ -16,6 +16,8 @@ CODES_FILE = "shared_codes.json"
 BLOCKED_USERS_FILE = "blocked_users.json"
 BOT_STATUS_FILE = "bot_status.json"
 LANGUAGES_FILE = "user_languages.json"
+BOT_COPIES_FILE = "bot_copies.json"
+ORIGINAL_BOT_INFO_FILE = "original_bot_info.json"
 
 # Настройка логирования
 logging.basicConfig(
@@ -65,7 +67,13 @@ TEXTS = {
         'cancelled': '❌ Отменено.',
         'language_changed': '🌐 Язык изменен на русский.',
         'select_language': '🌐 Выберите язык / Select language:',
-        'current_language': 'Текущий язык: Русский'
+        'current_language': 'Текущий язык: Русский',
+        'no_codes_available': '❌ К сожалению, сейчас нет доступных кодов. Поделитесь кодом, чтобы другие пользователи могли его получить!',
+        'create_bot_copy': '🤖 Создать копию бота',
+        'create_bot_copy_prompt': '🤖 Отправьте токен нового бота от BotFather:\n\nИспользуйте /cancel для отмены.',
+        'bot_copy_created': '✅ Копия бота успешно создана!\n\nТокен: <code>{token}</code>\n\nТеперь запустите этот бот с этим токеном.',
+        'invalid_token': '❌ Неверный формат токена. Токен должен быть в формате: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
+        'copy_bot_info': '📋 Это копия бота\n\nОригинальный бот: @{original_username}\nСоздатель: @{creator_username}'
     },
     'en': {
         'welcome': '👋 Welcome!\n\nChoose an action:',
@@ -106,7 +114,13 @@ TEXTS = {
         'cancelled': '❌ Cancelled.',
         'language_changed': '🌐 Language changed to English.',
         'select_language': '🌐 Выберите язык / Select language:',
-        'current_language': 'Current language: English'
+        'current_language': 'Current language: English',
+        'no_codes_available': '❌ Unfortunately, there are no codes available right now. Share a code so other users can get it!',
+        'create_bot_copy': '🤖 Create bot copy',
+        'create_bot_copy_prompt': '🤖 Send the new bot token from BotFather:\n\nUse /cancel to cancel.',
+        'bot_copy_created': '✅ Bot copy successfully created!\n\nToken: <code>{token}</code>\n\nNow run this bot with this token.',
+        'invalid_token': '❌ Invalid token format. Token should be in format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
+        'copy_bot_info': '📋 This is a bot copy\n\nOriginal bot: @{original_username}\nCreator: @{creator_username}'
     }
 }
 
@@ -173,7 +187,8 @@ def get_admin_keyboard(user_id):
         [InlineKeyboardButton("✅ Разблокировать пользователя" if get_user_language(user_id) == 'ru' else "✅ Unblock user", callback_data="admin_unblock_user")],
         [InlineKeyboardButton("🔧 Техническое обслуживание" if get_user_language(user_id) == 'ru' else "🔧 Maintenance", callback_data="admin_maintenance")],
         [InlineKeyboardButton("⏸ Выключить бота" if get_user_language(user_id) == 'ru' else "⏸ Disable bot", callback_data="admin_disable_bot")],
-        [InlineKeyboardButton("▶️ Включить бота" if get_user_language(user_id) == 'ru' else "▶️ Enable bot", callback_data="admin_enable_bot")]
+        [InlineKeyboardButton("▶️ Включить бота" if get_user_language(user_id) == 'ru' else "▶️ Enable bot", callback_data="admin_enable_bot")],
+        [InlineKeyboardButton("🤖 Создать копию бота" if get_user_language(user_id) == 'ru' else "🤖 Create bot copy", callback_data="admin_create_copy")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -184,6 +199,15 @@ def get_language_keyboard():
         [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+# Проверка, является ли бот копией
+def is_bot_copy():
+    original_info = load_json(ORIGINAL_BOT_INFO_FILE, {})
+    return bool(original_info.get('original_username'))
+
+# Получение информации об оригинальном боте
+def get_original_bot_info():
+    return load_json(ORIGINAL_BOT_INFO_FILE, {})
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -202,6 +226,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     welcome_text = t(user_id, 'welcome')
+    
+    # Если это копия бота, показываем информацию об оригинале
+    if is_bot_copy():
+        original_info = get_original_bot_info()
+        copy_info = t(user_id, 'copy_bot_info',
+            original_username=original_info.get('original_username', 'N/A'),
+            creator_username=original_info.get('creator_username', 'N/A')
+        )
+        welcome_text = copy_info + "\n\n" + welcome_text
     
     if is_admin(user_id):
         welcome_text += t(user_id, 'admin_panel_available')
@@ -275,7 +308,20 @@ async def code_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = data[2]  # yes или no
     
     if action == "yes":
-        code = f"CTO-{user_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Берем код из списка поделенных кодов
+        codes_list = load_json(CODES_FILE, [])
+        
+        if not codes_list:
+            await query.edit_message_text(t(user_id, 'no_codes_available'))
+            return
+        
+        # Берем первый доступный код
+        code_data = codes_list[0]
+        code = code_data['code']
+        
+        # Удаляем использованный код из списка
+        codes_list.pop(0)
+        save_json(CODES_FILE, codes_list)
         
         await query.edit_message_text(
             t(user_id, 'code_issued', code=code),
@@ -311,7 +357,60 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Проверка админских действий (приоритет)
     if is_admin(user_id):
         admin_action = context.user_data.get('admin_action')
-        if admin_action == 'block':
+        if admin_action == 'create_copy':
+            # Проверка формата токена (должен быть в формате 123456789:ABCdefGHIjklMNOpqrsTUVwxyz)
+            if ':' in text and len(text.split(':')) == 2:
+                token_parts = text.split(':')
+                if token_parts[0].isdigit() and len(token_parts[1]) > 10:
+                    # Получаем информацию о текущем боте через application
+                    try:
+                        application = context.application
+                        bot_info = await application.bot.get_me()
+                        original_username = bot_info.username
+                    except Exception as e:
+                        logger.error(f"Ошибка получения информации о боте: {e}")
+                        original_username = "N/A"
+                    
+                    # Сохраняем информацию о копии
+                    copies = load_json(BOT_COPIES_FILE, [])
+                    copy_info = {
+                        'token': text,
+                        'creator_id': user_id,
+                        'creator_username': update.effective_user.username or update.effective_user.first_name,
+                        'original_username': original_username,
+                        'created_at': datetime.now().isoformat()
+                    }
+                    copies.append(copy_info)
+                    save_json(BOT_COPIES_FILE, copies)
+                    
+                    # Создаем файл с информацией для копии бота
+                    original_bot_info = {
+                        'original_username': original_username,
+                        'creator_username': copy_info['creator_username'],
+                        'created_at': copy_info['created_at']
+                    }
+                    # Сохраняем в файл для копии (будет использоваться при запуске копии)
+                    copy_info_file = f"copy_info_{text.replace(':', '_')}.json"
+                    save_json(copy_info_file, original_bot_info)
+                    
+                    await update.message.reply_text(
+                        t(user_id, 'bot_copy_created', token=text) + f"\n\n📝 Для запуска копии используйте:\npython3 create_copy.py {text}",
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=get_admin_keyboard(user_id)
+                    )
+                else:
+                    await update.message.reply_text(
+                        t(user_id, 'invalid_token'),
+                        reply_markup=get_admin_keyboard(user_id)
+                    )
+            else:
+                await update.message.reply_text(
+                    t(user_id, 'invalid_token'),
+                    reply_markup=get_admin_keyboard(user_id)
+                )
+            context.user_data['admin_action'] = None
+            return
+        elif admin_action == 'block':
             try:
                 target_id = int(text)
                 blocked_users_list = load_json(BLOCKED_USERS_FILE, [])
@@ -491,6 +590,13 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             t(user_id, 'bot_enabled_msg'),
             reply_markup=get_admin_keyboard(user_id)
         )
+    
+    elif data == "admin_create_copy":
+        await query.edit_message_text(
+            t(user_id, 'create_bot_copy_prompt'),
+            reply_markup=None
+        )
+        context.user_data['admin_action'] = 'create_copy'
 
 # Обработчик выбора языка
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
