@@ -1,0 +1,177 @@
+/* FunPay Pro Extension Styles */
+#funpay-pro-auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999999;
+}
+
+.funpay-pro-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.funpay-pro-modal-content {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.funpay-pro-modal-content h2 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.funpay-pro-modal-content p {
+  margin: 0 0 15px 0;
+  color: #666;
+}
+
+#funpay-pro-auth-key {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+#funpay-pro-auth-key:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.funpay-pro-modal-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.funpay-pro-modal-buttons button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+#funpay-pro-auth-submit {
+  background: #007bff;
+  color: white;
+}
+
+#funpay-pro-auth-submit:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+#funpay-pro-auth-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+#funpay-pro-auth-cancel:hover {
+  background: #e0e0e0;
+}
+
+/* Панель управления */
+#funpay-pro-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999998;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.funpay-pro-toggle {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  transition: all 0.3s;
+}
+
+.funpay-pro-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.funpay-pro-toggle::before {
+  content: '⚡';
+}
+
+.funpay-pro-menu {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+}
+
+#funpay-pro-panel.active .funpay-pro-menu {
+  display: flex;
+}
+
+.fp-btn {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.2s;
+  color: #333;
+}
+
+.fp-btn:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.funpay-pro-modal-content {
+  animation: fadeIn 0.3s ease-out;
+}

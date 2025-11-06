@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FunPay Pro - Настройки</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .content {
+      padding: 30px;
+    }
+    
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+    
+    .section h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 26px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #667eea;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .status {
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚡ FunPay Pro</h1>
+      <p>Расширенные возможности для Funpay.com</p>
+    </div>
+    
+    <div class="content">
+      <div id="status" class="status"></div>
+      
+      <!-- Аутентификация -->
+      <div class="section">
+        <h2>🔐 Аутентификация</h2>
+        <div class="form-group">
+          <label>Ключ доступа:</label>
+          <input type="text" id="authKey" placeholder="AUTH-xxxx-xxxx-xxxx" />
+        </div>
+        <button class="btn btn-primary" id="authBtn">Подключить</button>
+      </div>
+      
+      <!-- Кастомизация -->
+      <div class="section">
+        <h2>🎨 Кастомизация интерфейса</h2>
+        <div class="form-group">
+          <label>Тема:</label>
+          <select id="theme">
+            <option value="default">По умолчанию</option>
+            <option value="dark">Темная</option>
+            <option value="light">Светлая</option>
+            <option value="custom">Своя</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Основной цвет:</label>
+          <input type="color" id="primaryColor" value="#007bff" />
+        </div>
+        <div class="form-group toggle-switch">
+          <label>Анимации:</label>
+          <label class="switch">
+            <input type="checkbox" id="animations" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Автоподнятие лотов -->
+      <div class="section">
+        <h2>🚀 Автоподнятие лотов</h2>
+        <div class="form-group toggle-switch">
+          <label>Включить автоподнятие:</label>
+          <label class="switch">
+            <input type="checkbox" id="autoRaiseEnabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Интервал (минуты):</label>
+          <input type="number" id="autoRaiseInterval" value="60" min="1" />
+        </div>
+      </div>
+      
+      <!-- Шаблоны сообщений -->
+      <div class="section">
+        <h2>💬 Автосообщения</h2>
+        <div class="form-group toggle-switch">
+          <label>Включить автоответы:</label>
+          <label class="switch">
+            <input type="checkbox" id="autoMessagesEnabled" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Шаблон ответа:</label>
+          <textarea id="messageTemplate" placeholder="Введите текст автоматического ответа..."></textarea>
+        </div>
+      </div>
+      
+      <!-- Аналитика -->
+      <div class="section">
+        <h2>📊 Аналитика</h2>
+        <div class="form-group toggle-switch">
+          <label>Сбор данных:</label>
+          <label class="switch">
+            <input type="checkbox" id="analyticsEnabled" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="statsDisplay" style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px; display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <strong>Всего продаж:</strong> <span id="totalSales">0</span>
+            </div>
+            <div>
+              <strong>Выручка:</strong> <span id="totalRevenue">0</span> ₽
+            </div>
+            <div>
+              <strong>Покупателей:</strong> <span id="uniqueBuyers">0</span>
+            </div>
+            <div>
+              <strong>Средний чек:</strong> <span id="avgOrder">0</span> ₽
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+          <button class="btn btn-primary" id="refreshStatsBtn">Обновить</button>
+          <button class="btn btn-primary" id="exportBtn">Экспорт данных</button>
+        </div>
+      </div>
+      
+      <!-- Мультиаккаунт -->
+      <div class="section">
+        <h2>🧩 Мультиаккаунт</h2>
+        <div class="form-group">
+          <label>Аккаунты:</label>
+          <select id="accountSelect" style="margin-bottom: 10px;">
+            <option value="">Выберите аккаунт</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" id="addAccountBtn">Добавить</button>
+          <button class="btn btn-primary" id="switchAccountBtn">Переключить</button>
+        </div>
+      </div>
+      
+      <!-- Сохранение -->
+      <div class="section">
+        <button class="btn btn-primary" id="saveBtn" style="width: 100%;">💾 Сохранить настройки</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
