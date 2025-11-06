@@ -1,17 +1,4 @@
-2025-11-06 21:13:22,976 - __main__ - INFO - Бот запущен...
-2025-11-06 21:13:23,294 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getMe "HTTP/1.1 200 OK"
-2025-11-06 21:13:23,397 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/deleteWebhook "HTTP/1.1 200 OK"
-2025-11-06 21:13:23,398 - telegram.ext.Application - INFO - Application started
-2025-11-06 21:13:33,735 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:13:43,836 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:13:53,937 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:04,038 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:14,140 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:21,904 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:22,168 - __main__ - ERROR - Ошибка API: 403 - {"message":"You are not subscribed to this API."}
-2025-11-06 21:14:22,532 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/sendMessage "HTTP/1.1 200 OK"
-2025-11-06 21:14:24,882 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:24,946 - __main__ - ERROR - Ошибка API: 429 - {"message":"Too many requests"}
-2025-11-06 21:14:25,080 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/sendMessage "HTTP/1.1 200 OK"
-2025-11-06 21:14:34,983 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 21:14:45,084 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
+2025-11-06 21:15:45,300 - __main__ - INFO - Бот запущен...
+2025-11-06 21:15:45,613 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getMe "HTTP/1.1 200 OK"
+2025-11-06 21:15:45,712 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/deleteWebhook "HTTP/1.1 200 OK"
+2025-11-06 21:15:45,712 - telegram.ext.Application - INFO - Application started
