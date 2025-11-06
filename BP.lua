@@ -1,19 +1,29 @@
-local imgui = require 'imgui'
-local sampev = require 'samp.events'
-local main_window_state = imgui.ImBool(false)
+local imgui = require 'mimgui'
+local inicfg = require 'inicfg'
+local se = require 'lib.samp.events'
 local encoding = require 'encoding'
-encoding.default = "CP1251"
-local u8 = encoding.UTF8
+encoding.default = 'CP1251'
+u8 = encoding.UTF8
 
-local file = io.open(getWorkingDirectory() .. "\\resource\\BPdaily.json", "r")
-a = file:read("*a")
-file:close()
-local daily = decodeJson(a)
+local main_window_state = imgui.ImBool(false)
 
-local file = io.open(getWorkingDirectory() .. "\\resource\\BPpremium.json", "r")
-a = file:read("*a")
-file:close()
-local premium = decodeJson(a)
+local file = io.open(getWorkingDirectory() .. "/resource/BPdaily.json", "r")
+if file then
+    a = file:read("*a")
+    file:close()
+    local daily = decodeJson(a)
+else
+    daily = {}
+end
+
+local file = io.open(getWorkingDirectory() .. "/resource/BPpremium.json", "r")
+if file then
+    a = file:read("*a")
+    file:close()
+    local premium = decodeJson(a)
+else
+    premium = {}
+end
 
 local quests = {}
 local premiumBP = false
@@ -140,7 +150,7 @@ function hasItemWithCategoryAndId(array, target, progress)
     return false
 end
 
-function sampev.onServerMessage(color, text)
+function se.onServerMessage(color, text)
 	if string.find(text, "%[Боевой Пропуск%]%{ffffff%} Вы успешно выполнили задание") then
 		local result = string.match(text, "'(.-)'")
 		if result then
