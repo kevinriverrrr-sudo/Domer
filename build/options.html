@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Настройки TabMute</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <h1>TabMute — Настройки</h1>
+        <p>Настройте автоматическое отключение звука и исключения для любимых сайтов.</p>
+      </header>
+
+      <section class="card">
+        <h2>Поведение</h2>
+        <label class="toggle">
+          <input type="checkbox" id="auto-mute-toggle" />
+          <span>
+            Автоматически отключать звук во вкладках, играющих в фоне
+          </span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="banner-toggle" />
+          <span>Показывать баннер на странице при отключении звука</span>
+        </label>
+
+        <div class="field">
+          <label for="delay-select">Задержка перед отключением звука</label>
+          <select id="delay-select">
+            <option value="1000">1 секунда</option>
+            <option value="3000">3 секунды</option>
+            <option value="5000">5 секунд</option>
+            <option value="10000">10 секунд</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Исключения</h2>
+        <p class="muted">Сайты из списка никогда не будут заглушены. Поддерживаются шаблоны вроде <code>*.example.com</code>.</p>
+        <form id="exclusion-form" class="exclusion-form">
+          <input type="text" id="exclusion-input" placeholder="пример: *.youtube.com" autocomplete="off" />
+          <button type="submit">Добавить</button>
+        </form>
+        <ul id="exclusions-list" class="exclusions-list"></ul>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

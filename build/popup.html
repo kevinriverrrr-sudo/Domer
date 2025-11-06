@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>TabMute</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup">
+      <header class="header">
+        <h1 class="title">TabMute</h1>
+        <p class="subtitle">Управление заглушенными вкладками</p>
+      </header>
+      <section class="status-block">
+        <p id="status" class="status-text">Загружается…</p>
+      </section>
+      <section id="muted-container" class="muted-container hidden">
+        <ul id="muted-list" class="muted-list"></ul>
+      </section>
+      <div class="actions">
+        <button id="unmute-all" class="button primary" disabled>Размутить все</button>
+        <button id="open-options" class="button secondary">Настройки</button>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
