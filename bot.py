@@ -1,7 +1,10 @@
 import asyncio
 import logging
 import aiohttp
+import random
+import string
 from datetime import datetime
+from dateutil import parser as date_parser
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
@@ -15,31 +18,115 @@ logger = logging.getLogger(__name__)
 # Токен бота
 BOT_TOKEN = "7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU"
 
-# API для временных почт (1secmail.com)
-API_BASE_URL = "https://www.1secmail.com/api/v1/"
+# API для временных почт (Mail.tm)
+API_BASE_URL = "https://api.mail.tm"
+DOMAINS_URL = f"{API_BASE_URL}/domains"
+MESSAGES_URL = f"{API_BASE_URL}/messages"
 
-# Хранилище почт пользователей {user_id: {email: str, login: str, domain: str}}
+# Хранилище почт пользователей {user_id: {email: str, login: str, domain: str, token: str}}
 user_emails = {}
 
 async def generate_email(user_id: int) -> dict:
     """Генерирует новую временную почту"""
-    async with aiohttp.ClientSession() as session:
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+    
+    async with aiohttp.ClientSession(headers=headers) as session:
         try:
-            # Получаем случайный домен
-            async with session.get(f"{API_BASE_URL}?action=genRandomMailbox&count=1") as resp:
-                domains = await resp.json()
-                if domains and len(domains) > 0:
-                    email = domains[0]
-                    login, domain = email.split('@')
-                    
-                    user_emails[user_id] = {
-                        'email': email,
-                        'login': login,
-                        'domain': domain
-                    }
-                    return user_emails[user_id]
+            # Получаем список доступных доменов
+            async with session.get(DOMAINS_URL) as resp:
+                if resp.status != 200:
+                    logger.error(f"Ошибка получения доменов: статус {resp.status}")
+                    # Fallback на 1secmail если mail.tm не работает
+                    return await generate_email_1secmail(user_id)
+                
+                domains_data = await resp.json()
+                if not domains_data or 'hydra:member' not in domains_data:
+                    logger.error("Неверный формат ответа от API доменов")
+                    return await generate_email_1secmail(user_id)
+                
+                domains = domains_data['hydra:member']
+                if not domains:
+                    logger.error("Список доменов пуст")
+                    return await generate_email_1secmail(user_id)
+                
+                # Выбираем первый доступный домен
+                domain = domains[0]['domain']
+                
+                # Генерируем случайный логин
+                login = ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
+                email = f"{login}@{domain}"
+                
+                # Создаем аккаунт
+                account_data = {
+                    "address": email,
+                    "password": ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+                }
+                
+                async with session.post(f"{API_BASE_URL}/accounts", json=account_data) as resp2:
+                    if resp2.status in [200, 201]:
+                        account_info = await resp2.json()
+                        # Получаем токен через логин
+                        login_data = {
+                            "address": email,
+                            "password": account_data['password']
+                        }
+                        async with session.post(f"{API_BASE_URL}/token", json=login_data) as resp3:
+                            if resp3.status in [200, 201]:
+                                token_info = await resp3.json()
+                                token = token_info.get('token', '')
+                            else:
+                                token = ''
+                        
+                        user_emails[user_id] = {
+                            'email': email,
+                            'login': login,
+                            'domain': domain,
+                            'token': token,
+                            'password': account_data['password']
+                        }
+                        logger.info(f"Создана почта для пользователя {user_id}: {email}")
+                        return user_emails[user_id]
+                    else:
+                        error_text = await resp2.text()
+                        logger.error(f"Ошибка создания аккаунта: статус {resp2.status}, ответ: {error_text}")
+                        return await generate_email_1secmail(user_id)
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"Ошибка сети при генерации почты: {e}")
+            return await generate_email_1secmail(user_id)
         except Exception as e:
-            logger.error(f"Ошибка генерации почты: {e}")
+            logger.error(f"Ошибка генерации почты: {e}", exc_info=True)
+            return await generate_email_1secmail(user_id)
+
+async def generate_email_1secmail(user_id: int) -> dict:
+    """Резервный метод генерации через 1secmail"""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+    }
+    
+    async with aiohttp.ClientSession(headers=headers) as session:
+        try:
+            # Используем известные домены 1secmail
+            domains_list = ['1secmail.com', '1secmail.org', '1secmail.net', 'wwjmp.com', 'esiix.com', 'bttmp.com']
+            login = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+            domain = random.choice(domains_list)
+            email = f"{login}@{domain}"
+            
+            user_emails[user_id] = {
+                'email': email,
+                'login': login,
+                'domain': domain,
+                'token': '',
+                'password': ''
+            }
+            logger.info(f"Создана почта через 1secmail для пользователя {user_id}: {email}")
+            return user_emails[user_id]
+        except Exception as e:
+            logger.error(f"Ошибка генерации через 1secmail: {e}")
             return None
 
 async def get_messages(user_id: int) -> list:
@@ -48,14 +135,41 @@ async def get_messages(user_id: int) -> list:
         return []
     
     email_data = user_emails[user_id]
-    async with aiohttp.ClientSession() as session:
+    
+    # Если есть токен, используем Mail.tm API
+    if email_data.get('token'):
+        headers = {
+            'Authorization': f'Bearer {email_data["token"]}',
+            'Accept': 'application/json'
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
+            try:
+                async with session.get(MESSAGES_URL) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if 'hydra:member' in data:
+                            return data['hydra:member']
+                        return data if isinstance(data, list) else []
+            except Exception as e:
+                logger.error(f"Ошибка получения писем через Mail.tm: {e}")
+    
+    # Fallback на 1secmail
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+    }
+    
+    async with aiohttp.ClientSession(headers=headers) as session:
         try:
-            url = f"{API_BASE_URL}?action=getMessages&login={email_data['login']}&domain={email_data['domain']}"
+            url = f"https://www.1secmail.com/api/v1/?action=getMessages&login={email_data['login']}&domain={email_data['domain']}"
             async with session.get(url) as resp:
+                if resp.status != 200:
+                    logger.error(f"Ошибка получения писем: статус {resp.status}")
+                    return []
                 messages = await resp.json()
                 return messages if messages else []
         except Exception as e:
-            logger.error(f"Ошибка получения писем: {e}")
+            logger.error(f"Ошибка получения писем: {e}", exc_info=True)
             return []
 
 async def read_message(user_id: int, message_id: int) -> dict:
@@ -64,14 +178,66 @@ async def read_message(user_id: int, message_id: int) -> dict:
         return None
     
     email_data = user_emails[user_id]
-    async with aiohttp.ClientSession() as session:
+    
+    # Если есть токен, используем Mail.tm API
+    if email_data.get('token'):
+        headers = {
+            'Authorization': f'Bearer {email_data["token"]}',
+            'Accept': 'application/json'
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
+            try:
+                async with session.get(f"{MESSAGES_URL}/{message_id}") as resp:
+                    if resp.status == 200:
+                        message = await resp.json()
+                        # Преобразуем формат Mail.tm в нужный формат
+                        from_addr_obj = message.get('from', {})
+                        if isinstance(from_addr_obj, dict):
+                            from_addr = from_addr_obj.get('address', 'Неизвестно')
+                        else:
+                            from_addr = str(from_addr_obj)
+                        
+                        created_at = message.get('createdAt', '')
+                        if isinstance(created_at, dict):
+                            timestamp = created_at.get('timestamp', 0)
+                        elif isinstance(created_at, str):
+                            # Парсим ISO формат даты
+                            try:
+                                dt = date_parser.parse(created_at)
+                                timestamp = int(dt.timestamp())
+                            except:
+                                timestamp = 0
+                        else:
+                            timestamp = int(created_at) if created_at else 0
+                        
+                        return {
+                            'from': from_addr,
+                            'subject': message.get('subject', ''),
+                            'textBody': message.get('text', ''),
+                            'htmlBody': message.get('html', []),
+                            'date': str(timestamp),
+                            'createdAt': created_at
+                        }
+            except Exception as e:
+                logger.error(f"Ошибка чтения письма через Mail.tm: {e}")
+    
+    # Fallback на 1secmail
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+    }
+    
+    async with aiohttp.ClientSession(headers=headers) as session:
         try:
-            url = f"{API_BASE_URL}?action=readMessage&login={email_data['login']}&domain={email_data['domain']}&id={message_id}"
+            url = f"https://www.1secmail.com/api/v1/?action=readMessage&login={email_data['login']}&domain={email_data['domain']}&id={message_id}"
             async with session.get(url) as resp:
+                if resp.status != 200:
+                    logger.error(f"Ошибка чтения письма: статус {resp.status}")
+                    return None
                 message = await resp.json()
                 return message
         except Exception as e:
-            logger.error(f"Ошибка чтения письма: {e}")
+            logger.error(f"Ошибка чтения письма: {e}", exc_info=True)
             return None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -158,9 +324,39 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = []
             
             for msg in messages[:10]:  # Показываем максимум 10 писем
-                date_str = datetime.fromtimestamp(int(msg['date'].split('.')[0])).strftime('%d.%m.%Y %H:%M')
-                button_text = f"📧 {msg['from']} - {date_str}"
-                keyboard.append([InlineKeyboardButton(button_text, callback_data=f"read_{msg['id']}")])
+                # Обработка разных форматов ответа
+                if isinstance(msg, dict):
+                    if 'from' in msg or 'createdAt' in msg:
+                        # Формат Mail.tm
+                        from_addr_obj = msg.get('from', {})
+                        if isinstance(from_addr_obj, dict):
+                            from_addr = from_addr_obj.get('address', 'Неизвестно')
+                        else:
+                            from_addr = str(from_addr_obj)
+                        
+                        date_val = msg.get('createdAt', '')
+                        if isinstance(date_val, dict):
+                            timestamp = date_val.get('timestamp', 0)
+                        elif isinstance(date_val, str):
+                            try:
+                                dt = date_parser.parse(date_val)
+                                timestamp = int(dt.timestamp())
+                            except:
+                                timestamp = 0
+                        else:
+                            timestamp = int(date_val) if date_val else 0
+                        
+                        date_str = datetime.fromtimestamp(timestamp).strftime('%d.%m.%Y %H:%M') if timestamp > 0 else 'Неизвестно'
+                        msg_id = msg.get('id', '')
+                    else:
+                        # Формат 1secmail
+                        from_addr = msg.get('from', 'Неизвестно')
+                        date_val = msg.get('date', '0')
+                        date_str = datetime.fromtimestamp(int(date_val.split('.')[0])).strftime('%d.%m.%Y %H:%M')
+                        msg_id = msg.get('id', '')
+                    
+                    button_text = f"📧 {from_addr[:30]} - {date_str}"
+                    keyboard.append([InlineKeyboardButton(button_text, callback_data=f"read_{msg_id}")])
             
             keyboard.append([InlineKeyboardButton("🔄 Обновить", callback_data="check_messages")])
             keyboard.append([InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")])
@@ -172,14 +368,44 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = await read_message(user_id, message_id)
         
         if message:
-            date_str = datetime.fromtimestamp(int(message['date'].split('.')[0])).strftime('%d.%m.%Y %H:%M:%S')
+            # Обработка разных форматов
+            if 'createdAt' in message:
+                # Mail.tm формат
+                date_val = message.get('createdAt', '')
+                if isinstance(date_val, dict):
+                    timestamp = date_val.get('timestamp', 0)
+                elif isinstance(date_val, str):
+                    try:
+                        dt = date_parser.parse(date_val)
+                        timestamp = int(dt.timestamp())
+                    except:
+                        timestamp = 0
+                else:
+                    timestamp = int(date_val) if date_val else 0
+                
+                date_str = datetime.fromtimestamp(timestamp).strftime('%d.%m.%Y %H:%M:%S') if timestamp > 0 else 'Неизвестно'
+                from_addr_obj = message.get('from', {})
+                if isinstance(from_addr_obj, dict):
+                    from_addr = from_addr_obj.get('address', 'Неизвестно')
+                else:
+                    from_addr = str(from_addr_obj)
+                subject = message.get('subject', 'Без темы')
+                text_body = message.get('text', message.get('textBody', 'Нет содержимого'))
+            else:
+                # 1secmail формат
+                date_val = message.get('date', '0')
+                date_str = datetime.fromtimestamp(int(date_val.split('.')[0])).strftime('%d.%m.%Y %H:%M:%S')
+                from_addr = message.get('from', 'Неизвестно')
+                subject = message.get('subject', 'Без темы')
+                text_body = message.get('textBody', message.get('htmlBody', 'Нет содержимого'))
+            
             text = (
                 f"📧 <b>Письмо #{message_id}</b>\n\n"
-                f"<b>От:</b> {message['from']}\n"
-                f"<b>Тема:</b> {message['subject']}\n"
+                f"<b>От:</b> {from_addr}\n"
+                f"<b>Тема:</b> {subject}\n"
                 f"<b>Дата:</b> {date_str}\n\n"
                 f"<b>Содержимое:</b>\n"
-                f"<pre>{message.get('textBody', message.get('htmlBody', 'Нет содержимого'))[:2000]}</pre>"
+                f"<pre>{str(text_body)[:2000]}</pre>"
             )
         else:
             text = "❌ Ошибка при чтении письма."
