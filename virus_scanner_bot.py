@@ -157,14 +157,17 @@ def format_file_results_summary(data: dict) -> tuple:
         keyboard = []
         
         if malicious > 0:
-            keyboard.append([InlineKeyboardButton("🚨 Вредоносные обнаружения", callback_data=f"file_malicious_{sha256[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"🚨 Вредоносные ({malicious})", callback_data=f"file_malicious_{sha256[:16]}")])
         if suspicious > 0:
-            keyboard.append([InlineKeyboardButton("⚠️ Подозрительные обнаружения", callback_data=f"file_suspicious_{sha256[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"⚠️ Подозрительные ({suspicious})", callback_data=f"file_suspicious_{sha256[:16]}")])
         if harmless > 0:
-            keyboard.append([InlineKeyboardButton("✅ Безопасные результаты", callback_data=f"file_harmless_{sha256[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"✅ Безопасные ({harmless})", callback_data=f"file_harmless_{sha256[:16]}")])
         
-        keyboard.append([InlineKeyboardButton("📋 Все результаты", callback_data=f"file_all_{sha256[:16]}")])
-        keyboard.append([InlineKeyboardButton("🔗 Открыть в VirusTotal", url=f"https://www.virustotal.com/gui/file/{sha256}")])
+        keyboard.append([InlineKeyboardButton("📋 Показать все результаты", callback_data=f"file_all_{sha256[:16]}")])
+        
+        # Добавляем ссылку на VirusTotal (используем полный SHA256)
+        if sha256:
+            keyboard.append([InlineKeyboardButton("🌐 Открыть анализ на VirusTotal", url=f"https://www.virustotal.com/gui/file/{sha256}")])
         
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
         
@@ -282,15 +285,17 @@ def format_url_results_summary(data: dict) -> tuple:
         keyboard = []
         
         if malicious > 0:
-            keyboard.append([InlineKeyboardButton("🚨 Вредоносные обнаружения", callback_data=f"url_malicious_{url_id[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"🚨 Вредоносные ({malicious})", callback_data=f"url_malicious_{url_id[:16]}")])
         if suspicious > 0:
-            keyboard.append([InlineKeyboardButton("⚠️ Подозрительные обнаружения", callback_data=f"url_suspicious_{url_id[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"⚠️ Подозрительные ({suspicious})", callback_data=f"url_suspicious_{url_id[:16]}")])
         if harmless > 0:
-            keyboard.append([InlineKeyboardButton("✅ Безопасные результаты", callback_data=f"url_harmless_{url_id[:16]}")])
+            keyboard.append([InlineKeyboardButton(f"✅ Безопасные ({harmless})", callback_data=f"url_harmless_{url_id[:16]}")])
         
-        keyboard.append([InlineKeyboardButton("📋 Все результаты", callback_data=f"url_all_{url_id[:16]}")])
+        keyboard.append([InlineKeyboardButton("📋 Показать все результаты", callback_data=f"url_all_{url_id[:16]}")])
+        
+        # Добавляем ссылку на VirusTotal (используем полный url_id)
         if url_id:
-            keyboard.append([InlineKeyboardButton("🔗 Открыть в VirusTotal", url=f"https://www.virustotal.com/gui/url/{url_id}")])
+            keyboard.append([InlineKeyboardButton("🌐 Открыть анализ на VirusTotal", url=f"https://www.virustotal.com/gui/url/{url_id}")])
         
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
         
@@ -302,6 +307,7 @@ def format_url_results_summary(data: dict) -> tuple:
 # Хранилище результатов (в продакшене лучше использовать БД)
 results_cache = {}  # {key: results_dict}
 summary_cache = {}  # {key: (message_text, reply_markup)}
+ids_cache = {}  # {key: (sha256_full или url_id_full)} - для хранения полных ID
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -309,7 +315,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
         [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
-        [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+        [InlineKeyboardButton("📖 Справка", callback_data="help_info")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -382,7 +388,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         keyboard = [
             [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
             [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
-            [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+            [InlineKeyboardButton("📖 Справка", callback_data="help_info")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -470,10 +476,15 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if results:
                 detailed = format_detailed_results(results, filter_type)
                 
-                keyboard = [
-                    [InlineKeyboardButton("🔙 К сводке", callback_data=f"file_summary_{file_hash_prefix}")],
-                    [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
-                ]
+                keyboard = []
+                
+                # Добавляем ссылку на VirusTotal в детальных результатах
+                if cache_key in ids_cache:
+                    sha256_full = ids_cache[cache_key]
+                    keyboard.append([InlineKeyboardButton("🌐 Открыть анализ на VirusTotal", url=f"https://www.virustotal.com/gui/file/{sha256_full}")])
+                
+                keyboard.append([InlineKeyboardButton("🔙 Вернуться к сводке", callback_data=f"file_summary_{file_hash_prefix}")])
+                keyboard.append([InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")])
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
                 await query.edit_message_text(
@@ -496,10 +507,15 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if results:
                 detailed = format_detailed_results(results, filter_type)
                 
-                keyboard = [
-                    [InlineKeyboardButton("🔙 К сводке", callback_data=f"url_summary_{url_id_prefix}")],
-                    [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
-                ]
+                keyboard = []
+                
+                # Добавляем ссылку на VirusTotal в детальных результатах
+                if cache_key in ids_cache:
+                    url_id_full = ids_cache[cache_key]
+                    keyboard.append([InlineKeyboardButton("🌐 Открыть анализ на VirusTotal", url=f"https://www.virustotal.com/gui/url/{url_id_full}")])
+                
+                keyboard.append([InlineKeyboardButton("🔙 Вернуться к сводке", callback_data=f"url_summary_{url_id_prefix}")])
+                keyboard.append([InlineKeyboardButton("🏠 Главное меню", callback_data="main_menu")])
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
                 await query.edit_message_text(
@@ -539,7 +555,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         file_name = "photo.jpg"
     
     if not file:
-        keyboard = [[InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]]
+        keyboard = [[InlineKeyboardButton("📖 Справка", callback_data="help_info")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
             "❌ Не удалось получить файл.\n\nПожалуйста, отправьте файл как документ (APK, ZIP, EXE и другие форматы поддерживаются).",
@@ -611,6 +627,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                         cache_key = f"file_{sha256[:16]}"
                         results_cache[cache_key] = results
                         summary_cache[cache_key] = (results_text, reply_markup)
+                        ids_cache[cache_key] = sha256  # Сохраняем полный SHA256
                     
                     await status_msg.edit_text(results_text, parse_mode='Markdown', reply_markup=reply_markup)
                     os.remove(file_path)
@@ -637,7 +654,7 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     text = update.message.text.strip()
     
     if not (text.startswith("http://") or text.startswith("https://")):
-        keyboard = [[InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]]
+        keyboard = [[InlineKeyboardButton("📖 Справка", callback_data="help_info")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
             "❌ Пожалуйста, отправьте корректную ссылку (начинается с http:// или https://)",
@@ -680,6 +697,7 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                         cache_key = f"url_{url_id[:16]}"
                         results_cache[cache_key] = results
                         summary_cache[cache_key] = (results_text, reply_markup)
+                        ids_cache[cache_key] = url_id  # Сохраняем полный url_id
                     
                     await status_msg.edit_text(results_text, parse_mode='Markdown', reply_markup=reply_markup)
                     return
@@ -707,7 +725,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         keyboard = [
             [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
             [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
-            [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+            [InlineKeyboardButton("📖 Справка", callback_data="help_info")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
