@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 Telegram бот для проверки файлов и ссылок на вирусы через VirusTotal API
+С красивым интерфейсом и интерактивными кнопками
 """
 
 import os
 import time
 import hashlib
+import json
 import requests
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 import logging
 
 # Настройка логирования
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 VIRUSTOTAL_API_KEY = "b3c6edf1e32e42feebebd9d485205b3f748e36cf1be71e1c6c9c5bda181c6af6"
 TELEGRAM_BOT_TOKEN = "7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU"
 VIRUSTOTAL_API_URL = "https://www.virustotal.com/api/v3"
-MAX_FILE_SIZE = 300 * 1024 * 1024  # 300 MB
+MAX_FILE_SIZE = 32 * 1024 * 1024  # 32 MB (лимит VirusTotal)
 
 
 class VirusTotalScanner:
@@ -50,11 +52,11 @@ class VirusTotalScanner:
             logger.error(f"Ошибка при загрузке файла: {e}")
             return {"error": str(e)}
     
-    def get_file_analysis(self, file_id: str) -> dict:
+    def get_file_analysis(self, analysis_id: str) -> dict:
         """Получает результаты анализа файла по ID"""
         try:
             response = requests.get(
-                f"{VIRUSTOTAL_API_URL}/analyses/{file_id}",
+                f"{VIRUSTOTAL_API_URL}/analyses/{analysis_id}",
                 headers=self.headers
             )
             return response.json()
@@ -101,23 +103,20 @@ class VirusTotalScanner:
             return {"error": str(e)}
 
 
-def format_file_results(data: dict) -> str:
-    """Форматирует результаты проверки файла для вывода"""
+def format_file_results_summary(data: dict) -> tuple:
+    """Форматирует краткую сводку результатов проверки файла"""
     if "error" in data:
-        return f"❌ Ошибка: {data['error']}"
+        return f"❌ Ошибка: {data['error']}", None, None
     
     if "data" not in data:
-        return "❌ Не удалось получить данные анализа"
+        return "❌ Не удалось получить данные анализа", None, None
     
     data_obj = data["data"]
     attributes = data_obj.get("attributes", {})
     
-    # Проверяем статус анализа (для новых анализов)
     status = attributes.get("status", None)
     
-    # Для отчетов по хешу используем last_analysis_results и last_analysis_stats
     if status is None or status == "completed":
-        # Пытаемся получить результаты из анализа или из отчета по хешу
         stats = attributes.get("stats", {}) or attributes.get("last_analysis_stats", {})
         results = attributes.get("results", {}) or attributes.get("last_analysis_results", {})
         
@@ -128,88 +127,129 @@ def format_file_results(data: dict) -> str:
         total = malicious + suspicious + undetected + harmless
         
         # Формируем сообщение
-        message = "🔍 **РЕЗУЛЬТАТЫ ПРОВЕРКИ ФАЙЛА**\n\n"
+        message = "🔍 *РЕЗУЛЬТАТЫ ПРОВЕРКИ ФАЙЛА*\n\n"
         
-        # Статистика
-        message += "📊 **Статистика:**\n"
-        message += f"✅ Безопасно: {harmless}\n"
-        message += f"⚠️ Подозрительно: {suspicious}\n"
-        message += f"❌ Вредоносно: {malicious}\n"
-        message += f"➖ Не обнаружено: {undetected}\n"
-        message += f"📈 Всего проверок: {total}\n\n"
-        
-        # Определяем общий статус
+        # Статистика с эмодзи
         if malicious > 0:
-            message += "🚨 **СТАТУС: ОПАСНО!**\n\n"
+            message += "🚨 *СТАТУС: ОПАСНО!*\n\n"
         elif suspicious > 0:
-            message += "⚠️ **СТАТУС: ПОДОЗРИТЕЛЬНО**\n\n"
+            message += "⚠️ *СТАТУС: ПОДОЗРИТЕЛЬНО*\n\n"
         else:
-            message += "✅ **СТАТУС: БЕЗОПАСНО**\n\n"
+            message += "✅ *СТАТУС: БЕЗОПАСНО*\n\n"
         
-        # Детальные результаты от антивирусов
-        if results:
-            message += "🛡️ **Детальные результаты антивирусов:**\n\n"
-            
-            # Сортируем результаты: сначала вредоносные, потом подозрительные
-            sorted_results = sorted(
-                results.items(),
-                key=lambda x: (
-                    0 if x[1].get("category") == "malicious" else
-                    1 if x[1].get("category") == "suspicious" else 2,
-                    x[0]
-                )
-            )
-            
-            for engine_name, result in sorted_results[:30]:  # Показываем первые 30
-                category = result.get("category", "unknown")
-                method = result.get("method", "")
-                
-                if category == "malicious":
-                    message += f"❌ **{engine_name}**: ВРЕДОНОСНО"
-                    if method:
-                        message += f" ({method})"
-                    message += "\n"
-                elif category == "suspicious":
-                    message += f"⚠️ **{engine_name}**: Подозрительно"
-                    if method:
-                        message += f" ({method})"
-                    message += "\n"
-                elif category == "harmless":
-                    message += f"✅ **{engine_name}**: Безопасно\n"
-            
-            if len(results) > 30:
-                message += f"\n... и еще {len(results) - 30} антивирусов\n"
+        message += "📊 *Статистика:*\n"
+        message += f"✅ Безопасно: `{harmless}`\n"
+        message += f"⚠️ Подозрительно: `{suspicious}`\n"
+        message += f"❌ Вредоносно: `{malicious}`\n"
+        message += f"➖ Не обнаружено: `{undetected}`\n"
+        message += f"📈 Всего проверок: `{total}`\n\n"
         
         # Информация о файле
-        file_info = attributes.get("meaningful_name", "") or attributes.get("names", [""])[0] if attributes.get("names") else ""
-        if file_info:
-            message += f"\n📄 **Файл**: {file_info}\n"
-        
+        file_info = attributes.get("meaningful_name", "") or (attributes.get("names", [""])[0] if attributes.get("names") else "")
         sha256 = attributes.get("sha256", "")
-        if sha256:
-            message += f"🔐 **SHA256**: `{sha256[:16]}...`\n"
         
-        return message
+        if file_info:
+            message += f"📄 *Файл:* `{file_info}`\n"
+        if sha256:
+            message += f"🔐 *SHA256:* `{sha256[:32]}...`\n"
+        
+        # Создаем кнопки для детального просмотра
+        keyboard = []
+        
+        if malicious > 0:
+            keyboard.append([InlineKeyboardButton("🚨 Вредоносные обнаружения", callback_data=f"file_malicious_{sha256[:16]}")])
+        if suspicious > 0:
+            keyboard.append([InlineKeyboardButton("⚠️ Подозрительные обнаружения", callback_data=f"file_suspicious_{sha256[:16]}")])
+        if harmless > 0:
+            keyboard.append([InlineKeyboardButton("✅ Безопасные результаты", callback_data=f"file_harmless_{sha256[:16]}")])
+        
+        keyboard.append([InlineKeyboardButton("📋 Все результаты", callback_data=f"file_all_{sha256[:16]}")])
+        keyboard.append([InlineKeyboardButton("🔗 Открыть в VirusTotal", url=f"https://www.virustotal.com/gui/file/{sha256}")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+        
+        return message, reply_markup, results
     else:
-        return f"⏳ Анализ еще выполняется. Статус: {status}"
+        return f"⏳ Анализ еще выполняется. Статус: {status}", None, None
 
 
-def format_url_results(data: dict) -> str:
-    """Форматирует результаты проверки URL для вывода"""
+def format_detailed_results(results: dict, filter_type: str = "all") -> str:
+    """Форматирует детальные результаты по типу"""
+    if not results:
+        return "❌ Результаты не найдены"
+    
+    message = ""
+    
+    if filter_type == "malicious":
+        message = "🚨 *ВРЕДОНОСНЫЕ ОБНАРУЖЕНИЯ:*\n\n"
+        filtered = {k: v for k, v in results.items() if v.get("category") == "malicious"}
+    elif filter_type == "suspicious":
+        message = "⚠️ *ПОДОЗРИТЕЛЬНЫЕ ОБНАРУЖЕНИЯ:*\n\n"
+        filtered = {k: v for k, v in results.items() if v.get("category") == "suspicious"}
+    elif filter_type == "harmless":
+        message = "✅ *БЕЗОПАСНЫЕ РЕЗУЛЬТАТЫ:*\n\n"
+        filtered = {k: v for k, v in results.items() if v.get("category") == "harmless"}
+    else:
+        message = "📋 *ВСЕ РЕЗУЛЬТАТЫ АНТИВИРУСОВ:*\n\n"
+        filtered = results
+    
+    # Сортируем результаты
+    sorted_results = sorted(
+        filtered.items(),
+        key=lambda x: (
+            0 if x[1].get("category") == "malicious" else
+            1 if x[1].get("category") == "suspicious" else 2,
+            x[0]
+        )
+    )
+    
+    for engine_name, result in sorted_results:
+        category = result.get("category", "unknown")
+        method = result.get("method", "")
+        result_text = result.get("result", "")
+        
+        if category == "malicious":
+            message += f"❌ *{engine_name}*\n"
+            if result_text:
+                message += f"   🦠 Угроза: `{result_text}`\n"
+            if method:
+                message += f"   🔧 Метод: `{method}`\n"
+            message += "\n"
+        elif category == "suspicious":
+            message += f"⚠️ *{engine_name}*\n"
+            if result_text:
+                message += f"   ⚠️ Результат: `{result_text}`\n"
+            if method:
+                message += f"   🔧 Метод: `{method}`\n"
+            message += "\n"
+        elif category == "harmless":
+            message += f"✅ *{engine_name}*\n"
+            if result_text:
+                message += f"   ✓ Результат: `{result_text}`\n"
+            message += "\n"
+    
+    if not sorted_results:
+        message += "Нет результатов для отображения"
+    
+    return message
+
+
+def format_url_results_summary(data: dict) -> tuple:
+    """Форматирует краткую сводку результатов проверки URL"""
     if "error" in data:
-        return f"❌ Ошибка: {data['error']}"
+        return f"❌ Ошибка: {data['error']}", None, None
     
     if "data" not in data:
-        return "❌ Не удалось получить данные анализа"
+        return "❌ Не удалось получить данные анализа", None, None
     
     data_obj = data["data"]
+    attributes = data_obj.get("attributes", {})
     
-    # Проверяем статус анализа
-    status = data_obj.get("attributes", {}).get("status", "unknown")
+    status = attributes.get("status", "unknown")
     
     if status == "completed":
-        stats = data_obj.get("attributes", {}).get("stats", {})
-        results = data_obj.get("attributes", {}).get("results", {})
+        stats = attributes.get("stats", {})
+        results = attributes.get("results", {})
         
         malicious = stats.get("malicious", 0)
         suspicious = stats.get("suspicious", 0)
@@ -217,162 +257,301 @@ def format_url_results(data: dict) -> str:
         harmless = stats.get("harmless", 0)
         total = malicious + suspicious + undetected + harmless
         
-        # Формируем сообщение
-        message = "🔍 **РЕЗУЛЬТАТЫ ПРОВЕРКИ ССЫЛКИ**\n\n"
+        message = "🔍 *РЕЗУЛЬТАТЫ ПРОВЕРКИ ССЫЛКИ*\n\n"
         
-        # Статистика
-        message += "📊 **Статистика:**\n"
-        message += f"✅ Безопасно: {harmless}\n"
-        message += f"⚠️ Подозрительно: {suspicious}\n"
-        message += f"❌ Вредоносно: {malicious}\n"
-        message += f"➖ Не обнаружено: {undetected}\n"
-        message += f"📈 Всего проверок: {total}\n\n"
-        
-        # Определяем общий статус
         if malicious > 0:
-            message += "🚨 **СТАТУС: ОПАСНО!**\n\n"
+            message += "🚨 *СТАТУС: ОПАСНО!*\n\n"
         elif suspicious > 0:
-            message += "⚠️ **СТАТУС: ПОДОЗРИТЕЛЬНО**\n\n"
+            message += "⚠️ *СТАТУС: ПОДОЗРИТЕЛЬНО*\n\n"
         else:
-            message += "✅ **СТАТУС: БЕЗОПАСНО**\n\n"
+            message += "✅ *СТАТУС: БЕЗОПАСНО*\n\n"
         
-        # Детальные результаты от антивирусов
-        if results:
-            message += "🛡️ **Детальные результаты антивирусов:**\n\n"
-            
-            # Сортируем результаты: сначала вредоносные, потом подозрительные
-            sorted_results = sorted(
-                results.items(),
-                key=lambda x: (
-                    0 if x[1].get("category") == "malicious" else
-                    1 if x[1].get("category") == "suspicious" else 2,
-                    x[0]
-                )
-            )
-            
-            for engine_name, result in sorted_results[:30]:  # Показываем первые 30
-                category = result.get("category", "unknown")
-                method = result.get("method", "")
-                
-                if category == "malicious":
-                    message += f"❌ **{engine_name}**: ВРЕДОНОСНО"
-                    if method:
-                        message += f" ({method})"
-                    message += "\n"
-                elif category == "suspicious":
-                    message += f"⚠️ **{engine_name}**: Подозрительно"
-                    if method:
-                        message += f" ({method})"
-                    message += "\n"
-                elif category == "harmless":
-                    message += f"✅ **{engine_name}**: Безопасно\n"
-            
-            if len(results) > 30:
-                message += f"\n... и еще {len(results) - 30} антивирусов\n"
+        message += "📊 *Статистика:*\n"
+        message += f"✅ Безопасно: `{harmless}`\n"
+        message += f"⚠️ Подозрительно: `{suspicious}`\n"
+        message += f"❌ Вредоносно: `{malicious}`\n"
+        message += f"➖ Не обнаружено: `{undetected}`\n"
+        message += f"📈 Всего проверок: `{total}`\n\n"
         
-        # Информация о ссылке
-        url = data_obj.get("attributes", {}).get("url", "")
+        url = attributes.get("url", "")
+        url_id = attributes.get("url_id", "")
+        
         if url:
-            message += f"\n🔗 **Ссылка**: {url}\n"
+            message += f"🔗 *Ссылка:* `{url}`\n"
         
-        return message
+        keyboard = []
+        
+        if malicious > 0:
+            keyboard.append([InlineKeyboardButton("🚨 Вредоносные обнаружения", callback_data=f"url_malicious_{url_id[:16]}")])
+        if suspicious > 0:
+            keyboard.append([InlineKeyboardButton("⚠️ Подозрительные обнаружения", callback_data=f"url_suspicious_{url_id[:16]}")])
+        if harmless > 0:
+            keyboard.append([InlineKeyboardButton("✅ Безопасные результаты", callback_data=f"url_harmless_{url_id[:16]}")])
+        
+        keyboard.append([InlineKeyboardButton("📋 Все результаты", callback_data=f"url_all_{url_id[:16]}")])
+        if url_id:
+            keyboard.append([InlineKeyboardButton("🔗 Открыть в VirusTotal", url=f"https://www.virustotal.com/gui/url/{url_id}")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+        
+        return message, reply_markup, results
     else:
-        return f"⏳ Анализ еще выполняется. Статус: {status}"
+        return f"⏳ Анализ еще выполняется. Статус: {status}", None, None
+
+
+# Хранилище результатов (в продакшене лучше использовать БД)
+results_cache = {}  # {key: results_dict}
+summary_cache = {}  # {key: (message_text, reply_markup)}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /start"""
+    keyboard = [
+        [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
+        [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
+        [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     welcome_message = """
-🤖 **Добро пожаловать в Virus Scanner Bot!**
+🤖 *Добро пожаловать в Virus Scanner Bot!*
 
 Я помогу вам проверить файлы и ссылки на вирусы через VirusTotal.
 
-**Как использовать:**
-📎 Отправьте мне файл для проверки
-🔗 Отправьте ссылку (URL) для проверки
+*Возможности:*
+✅ Проверка файлов (до 32 МБ)
+✅ Проверка ссылок (URL)
+✅ Детальные результаты от всех антивирусов
+✅ Интерактивное меню для просмотра результатов
 
-**Команды:**
-/start - Показать это сообщение
-/help - Справка
-
-Бот использует более 70 антивирусов для максимально точной проверки!
+*Выберите действие:*
 """
-    await update.message.reply_text(welcome_message, parse_mode='Markdown')
+    await update.message.reply_text(
+        welcome_message,
+        parse_mode='Markdown',
+        reply_markup=reply_markup
+    )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /help"""
+    keyboard = [
+        [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
+        [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
+        [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     help_text = """
-📖 **Справка по использованию бота:**
+📖 *Справка по использованию бота:*
 
-**Проверка файлов:**
-1. Отправьте файл боту (до 300 МБ)
-2. Бот загрузит файл в VirusTotal
-3. Дождитесь результатов анализа
-4. Получите детальный отчет от всех антивирусов
+*Проверка файлов:*
+1️⃣ Отправьте файл боту (до 32 МБ)
+2️⃣ Бот загрузит файл в VirusTotal
+3️⃣ Дождитесь результатов анализа
+4️⃣ Используйте кнопки для просмотра деталей
 
-**Проверка ссылок:**
-1. Отправьте ссылку боту (начинается с http:// или https://)
-2. Бот просканирует ссылку через VirusTotal
-3. Дождитесь результатов анализа
-4. Получите детальный отчет от всех антивирусов
+*Проверка ссылок:*
+1️⃣ Отправьте ссылку боту (http:// или https://)
+2️⃣ Бот просканирует ссылку через VirusTotal
+3️⃣ Дождитесь результатов анализа
+4️⃣ Используйте кнопки для просмотра деталей
 
-**Статусы:**
+*Статусы:*
 ✅ Безопасно - файл/ссылка не содержит угроз
 ⚠️ Подозрительно - некоторые антивирусы обнаружили подозрительную активность
 ❌ Вредоносно - файл/ссылка содержит вредоносный код
 
 Бот проверяет через все доступные антивирусы в VirusTotal!
 """
-    await update.message.reply_text(help_text, parse_mode='Markdown')
+    await update.message.reply_text(
+        help_text,
+        parse_mode='Markdown',
+        reply_markup=reply_markup
+    )
+
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик нажатий на кнопки"""
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    
+    if data == "main_menu":
+        keyboard = [
+            [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
+            [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
+            [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "🏠 *Главное меню*\n\nВыберите действие:",
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+        return
+    
+    if data == "help_file":
+        await query.edit_message_text(
+            "📎 *Проверка файла*\n\nОтправьте файл боту (до 32 МБ). Поддерживаются все форматы: APK, ZIP, EXE и другие.",
+            parse_mode='Markdown'
+        )
+        return
+    
+    if data == "help_url":
+        await query.edit_message_text(
+            "🔗 *Проверка ссылки*\n\nОтправьте ссылку боту (начинается с http:// или https://).",
+            parse_mode='Markdown'
+        )
+        return
+    
+    if data == "help_info":
+        help_text = """
+📖 *Справка по использованию бота:*
+
+*Проверка файлов:*
+1️⃣ Отправьте файл боту (до 32 МБ)
+2️⃣ Бот загрузит файл в VirusTotal
+3️⃣ Дождитесь результатов анализа
+4️⃣ Используйте кнопки для просмотра деталей
+
+*Проверка ссылок:*
+1️⃣ Отправьте ссылку боту (http:// или https://)
+2️⃣ Бот просканирует ссылку через VirusTotal
+3️⃣ Дождитесь результатов анализа
+4️⃣ Используйте кнопки для просмотра деталей
+
+*Статусы:*
+✅ Безопасно - файл/ссылка не содержит угроз
+⚠️ Подозрительно - некоторые антивирусы обнаружили подозрительную активность
+❌ Вредоносно - файл/ссылка содержит вредоносный код
+"""
+        keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(help_text, parse_mode='Markdown', reply_markup=reply_markup)
+        return
+    
+    # Обработка возврата к сводке
+    if data.startswith("file_summary_"):
+        file_hash_prefix = data.replace("file_summary_", "")
+        cache_key = f"file_{file_hash_prefix}"
+        
+        if cache_key in summary_cache:
+            message_text, reply_markup = summary_cache[cache_key]
+            await query.edit_message_text(message_text, parse_mode='Markdown', reply_markup=reply_markup)
+        else:
+            await query.answer("Сводка не найдена. Пожалуйста, проверьте файл снова.", show_alert=True)
+        return
+    
+    if data.startswith("url_summary_"):
+        url_id_prefix = data.replace("url_summary_", "")
+        cache_key = f"url_{url_id_prefix}"
+        
+        if cache_key in summary_cache:
+            message_text, reply_markup = summary_cache[cache_key]
+            await query.edit_message_text(message_text, parse_mode='Markdown', reply_markup=reply_markup)
+        else:
+            await query.answer("Сводка не найдена. Пожалуйста, проверьте ссылку снова.", show_alert=True)
+        return
+    
+    # Обработка детальных результатов
+    if data.startswith("file_"):
+        parts = data.split("_")
+        if len(parts) >= 3:
+            filter_type = parts[1]  # malicious, suspicious, harmless, all
+            file_hash_prefix = parts[2]
+            cache_key = f"file_{file_hash_prefix}"
+            
+            # Ищем результаты в кэше
+            results = results_cache.get(cache_key)
+            
+            if results:
+                detailed = format_detailed_results(results, filter_type)
+                
+                keyboard = [
+                    [InlineKeyboardButton("🔙 К сводке", callback_data=f"file_summary_{file_hash_prefix}")],
+                    [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(
+                    detailed,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.answer("Результаты не найдены. Пожалуйста, проверьте файл снова.", show_alert=True)
+    
+    elif data.startswith("url_"):
+        parts = data.split("_")
+        if len(parts) >= 3:
+            filter_type = parts[1]
+            url_id_prefix = parts[2]
+            cache_key = f"url_{url_id_prefix}"
+            
+            results = results_cache.get(cache_key)
+            
+            if results:
+                detailed = format_detailed_results(results, filter_type)
+                
+                keyboard = [
+                    [InlineKeyboardButton("🔙 К сводке", callback_data=f"url_summary_{url_id_prefix}")],
+                    [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(
+                    detailed,
+                    parse_mode='Markdown',
+                    reply_markup=reply_markup
+                )
+            else:
+                await query.answer("Результаты не найдены. Пожалуйста, проверьте ссылку снова.", show_alert=True)
 
 
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик загрузки файлов"""
-    # Проверяем различные типы файлов
     file = None
     file_name = None
     
     if update.message.document:
-        # Документы (APK, ZIP, EXE и т.д.)
         file = update.message.document
         file_name = file.file_name
     elif update.message.video:
-        # Видео файлы
         file = update.message.video
         file_name = file.file_name or "video.mp4"
     elif update.message.audio:
-        # Аудио файлы
         file = update.message.audio
         file_name = file.file_name or "audio.mp3"
     elif update.message.voice:
-        # Голосовые сообщения
         file = update.message.voice
         file_name = "voice.ogg"
     elif update.message.video_note:
-        # Кружочки (видео заметки)
         file = update.message.video_note
         file_name = "video_note.mp4"
     elif update.message.animation:
-        # GIF и анимации
         file = update.message.animation
         file_name = file.file_name or "animation.gif"
     elif update.message.photo:
-        # Фотографии (берем самое большое качество)
         file = update.message.photo[-1]
         file_name = "photo.jpg"
     
     if not file:
+        keyboard = [[InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "❌ Не удалось получить файл.\n\n"
-            "Пожалуйста, отправьте файл как документ (APK, ZIP, EXE и другие форматы поддерживаются)."
+            "❌ Не удалось получить файл.\n\nПожалуйста, отправьте файл как документ (APK, ZIP, EXE и другие форматы поддерживаются).",
+            reply_markup=reply_markup
         )
         return
     
     # Проверяем размер файла
     if file.file_size and file.file_size > MAX_FILE_SIZE:
         await update.message.reply_text(
-            f"❌ Файл слишком большой. Максимальный размер: {MAX_FILE_SIZE // (1024*1024)} МБ"
+            f"❌ Файл слишком большой.\n\nМаксимальный размер: {MAX_FILE_SIZE // (1024*1024)} МБ\n\n"
+            f"Размер вашего файла: {file.file_size // (1024*1024)} МБ"
         )
         return
     
@@ -382,9 +561,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     try:
         # Скачиваем файл
         file_obj = await context.bot.get_file(file.file_id)
-        # Используем имя файла если есть, иначе генерируем по file_id
         safe_file_name = file_name or f"file_{file.file_id}"
-        # Убираем небезопасные символы из имени файла
         safe_file_name = "".join(c for c in safe_file_name if c.isalnum() or c in "._-")
         file_path = f"/tmp/{file.file_id}_{safe_file_name}"
         await file_obj.download_to_drive(file_path)
@@ -392,73 +569,21 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         # Инициализируем сканер
         scanner = VirusTotalScanner(VIRUSTOTAL_API_KEY)
         
-        # Проверяем размер файла для VirusTotal (лимит 32 МБ для прямой загрузки)
-        VIRUSTOTAL_UPLOAD_LIMIT = 32 * 1024 * 1024  # 32 MB
-        file_size = os.path.getsize(file_path)
-        
-        if file_size > VIRUSTOTAL_UPLOAD_LIMIT:
-            # Для больших файлов используем проверку по хешу
-            await status_msg.edit_text("📊 Файл большой, вычисляю хеш для проверки...")
-            
-            # Вычисляем SHA256 файла
-            sha256_hash = hashlib.sha256()
-            with open(file_path, 'rb') as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    sha256_hash.update(chunk)
-            file_hash = sha256_hash.hexdigest()
-            
-            # Получаем отчет по хешу
-            await status_msg.edit_text("🔍 Проверяю файл по хешу через все антивирусы...")
-            report_result = scanner.get_file_report(file_hash)
-            
-            if "error" not in report_result and "data" in report_result:
-                results_text = format_file_results(report_result)
-                await status_msg.edit_text(results_text, parse_mode='Markdown')
-            else:
-                await status_msg.edit_text(
-                    "⚠️ Файл не найден в базе VirusTotal.\n\n"
-                    "Для файлов больше 32 МБ VirusTotal требует прямую загрузку через веб-интерфейс.\n"
-                    "Попробуйте загрузить файл на https://www.virustotal.com вручную."
-                )
-            
-            os.remove(file_path)
-            return
-        
-        # Для файлов до 32 МБ загружаем напрямую
+        # Загружаем файл в VirusTotal
         await status_msg.edit_text("📤 Загружаю файл в VirusTotal...")
         upload_result = scanner.upload_file(file_path)
         
         if "error" in upload_result:
             error_msg = str(upload_result.get("error", "")).lower()
             if "too big" in error_msg or "file is too big" in error_msg:
-                # Если файл слишком большой, пробуем через хеш
-                await status_msg.edit_text("📊 Файл слишком большой для прямой загрузки. Вычисляю хеш...")
-                
-                sha256_hash = hashlib.sha256()
-                with open(file_path, 'rb') as f:
-                    for chunk in iter(lambda: f.read(4096), b""):
-                        sha256_hash.update(chunk)
-                file_hash = sha256_hash.hexdigest()
-                
-                await status_msg.edit_text("🔍 Проверяю файл по хешу через все антивирусы...")
-                report_result = scanner.get_file_report(file_hash)
-                
-                if "error" not in report_result and "data" in report_result:
-                    results_text = format_file_results(report_result)
-                    await status_msg.edit_text(results_text, parse_mode='Markdown')
-                else:
-                    await status_msg.edit_text(
-                        "⚠️ Файл не найден в базе VirusTotal.\n\n"
-                        "Для файлов больше 32 МБ VirusTotal требует прямую загрузку через веб-интерфейс.\n"
-                        "Попробуйте загрузить файл на https://www.virustotal.com вручную."
-                    )
-                
-                os.remove(file_path)
-                return
+                await status_msg.edit_text(
+                    f"❌ Файл слишком большой для загрузки.\n\n"
+                    f"Максимальный размер: {MAX_FILE_SIZE // (1024*1024)} МБ"
+                )
             else:
                 await status_msg.edit_text(f"❌ Ошибка при загрузке файла: {upload_result.get('error', 'Неизвестная ошибка')}")
-                os.remove(file_path)
-                return
+            os.remove(file_path)
+            return
         
         analysis_id = upload_result.get("data", {}).get("id")
         if not analysis_id:
@@ -478,8 +603,16 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 status = analysis_result.get("data", {}).get("attributes", {}).get("status", "")
                 if status == "completed":
                     # Форматируем и отправляем результаты
-                    results_text = format_file_results(analysis_result)
-                    await status_msg.edit_text(results_text, parse_mode='Markdown')
+                    results_text, reply_markup, results = format_file_results_summary(analysis_result)
+                    
+                    # Сохраняем результаты в кэш
+                    sha256 = analysis_result.get("data", {}).get("attributes", {}).get("sha256", "")
+                    if sha256 and results:
+                        cache_key = f"file_{sha256[:16]}"
+                        results_cache[cache_key] = results
+                        summary_cache[cache_key] = (results_text, reply_markup)
+                    
+                    await status_msg.edit_text(results_text, parse_mode='Markdown', reply_markup=reply_markup)
                     os.remove(file_path)
                     return
                 elif status == "queued":
@@ -487,26 +620,9 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 else:
                     await status_msg.edit_text(f"⏳ Анализ выполняется... Статус: {status}")
         
-        # Если анализ не завершился, пытаемся получить отчет по хешу
-        await status_msg.edit_text("⏳ Анализ занимает больше времени. Пытаюсь получить отчет по хешу файла...")
-        
-        # Вычисляем SHA256 файла
-        sha256_hash = hashlib.sha256()
-        with open(file_path, 'rb') as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(chunk)
-        file_hash = sha256_hash.hexdigest()
-        
-        # Получаем отчет по хешу
-        report_result = scanner.get_file_report(file_hash)
-        if "error" not in report_result:
-            results_text = format_file_results(report_result)
-            await status_msg.edit_text(results_text, parse_mode='Markdown')
-        else:
-            await status_msg.edit_text(
-                "⏳ Анализ еще выполняется. Пожалуйста, попробуйте проверить файл позже через несколько минут."
-            )
-        
+        await status_msg.edit_text(
+            "⏳ Анализ занимает больше времени. Пожалуйста, попробуйте проверить файл позже через несколько минут."
+        )
         os.remove(file_path)
         
     except Exception as e:
@@ -520,24 +636,25 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     """Обработчик проверки URL"""
     text = update.message.text.strip()
     
-    # Проверяем, что это URL
     if not (text.startswith("http://") or text.startswith("https://")):
-        await update.message.reply_text("❌ Пожалуйста, отправьте корректную ссылку (начинается с http:// или https://)")
+        keyboard = [[InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "❌ Пожалуйста, отправьте корректную ссылку (начинается с http:// или https://)",
+            reply_markup=reply_markup
+        )
         return
     
-    # Отправляем сообщение о начале проверки
     status_msg = await update.message.reply_text("⏳ Начинаю проверку ссылки...")
     
     try:
-        # Инициализируем сканер
         scanner = VirusTotalScanner(VIRUSTOTAL_API_KEY)
         
-        # Сканируем URL
         await status_msg.edit_text("📤 Отправляю ссылку в VirusTotal для анализа...")
         scan_result = scanner.scan_url(text)
         
         if "error" in scan_result:
-            await status_msg.edit_text(f"❌ Ошибка при сканировании ссылки: {scan_result['error']}")
+            await status_msg.edit_text(f"❌ Ошибка при сканировании ссылки: {scan_result.get('error', 'Неизвестная ошибка')}")
             return
         
         analysis_id = scan_result.get("data", {}).get("id")
@@ -545,7 +662,6 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await status_msg.edit_text("❌ Не удалось получить ID анализа")
             return
         
-        # Ждем завершения анализа
         await status_msg.edit_text("🔍 Анализирую ссылку через все антивирусы... Это может занять несколько секунд.")
         
         max_attempts = 30
@@ -556,9 +672,16 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             if "error" not in analysis_result:
                 status = analysis_result.get("data", {}).get("attributes", {}).get("status", "")
                 if status == "completed":
-                    # Форматируем и отправляем результаты
-                    results_text = format_url_results(analysis_result)
-                    await status_msg.edit_text(results_text, parse_mode='Markdown')
+                    results_text, reply_markup, results = format_url_results_summary(analysis_result)
+                    
+                    # Сохраняем результаты в кэш
+                    url_id = analysis_result.get("data", {}).get("attributes", {}).get("url_id", "")
+                    if url_id and results:
+                        cache_key = f"url_{url_id[:16]}"
+                        results_cache[cache_key] = results
+                        summary_cache[cache_key] = (results_text, reply_markup)
+                    
+                    await status_msg.edit_text(results_text, parse_mode='Markdown', reply_markup=reply_markup)
                     return
                 elif status == "queued":
                     await status_msg.edit_text(f"⏳ Ссылка в очереди на анализ... (попытка {attempt + 1}/{max_attempts})")
@@ -578,30 +701,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Обработчик текстовых сообщений"""
     text = update.message.text.strip()
     
-    # Проверяем, является ли сообщение URL
     if text.startswith("http://") or text.startswith("https://"):
         await handle_url(update, context)
     else:
+        keyboard = [
+            [InlineKeyboardButton("📎 Проверить файл", callback_data="help_file")],
+            [InlineKeyboardButton("🔗 Проверить ссылку", callback_data="help_url")],
+            [InlineKeyboardButton("ℹ️ Справка", callback_data="help_info")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "❓ Не понял ваше сообщение.\n\n"
-            "Отправьте мне:\n"
-            "📎 Файл для проверки\n"
-            "🔗 Ссылку (URL) для проверки\n\n"
-            "Используйте /help для справки."
+            "❓ Не понял ваше сообщение.\n\nОтправьте мне:\n📎 Файл для проверки\n🔗 Ссылку (URL) для проверки",
+            reply_markup=reply_markup
         )
 
 
 def main() -> None:
     """Основная функция запуска бота"""
-    # Создаем приложение
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
-    # Регистрируем обработчики (важен порядок!)
+    # Регистрируем обработчики
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CallbackQueryHandler(button_callback))
     
-    # Обработчики файлов (все типы)
-    # Используем комбинированный фильтр для всех типов медиа
+    # Обработчики файлов
     file_filter = (
         filters.Document.ALL |
         filters.VIDEO |
@@ -609,15 +733,13 @@ def main() -> None:
         filters.VOICE |
         filters.VIDEO_NOTE |
         filters.ANIMATION |
-        filters.PHOTO |
-        filters.Document.ALL
+        filters.PHOTO
     )
     application.add_handler(MessageHandler(file_filter, handle_file))
     
-    # Обработчик текстовых сообщений (должен быть последним)
+    # Обработчик текстовых сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Запускаем бота
     logger.info("Бот запущен и готов к работе!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
