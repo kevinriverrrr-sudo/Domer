@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 VIRUSTOTAL_API_KEY = "b3c6edf1e32e42feebebd9d485205b3f748e36cf1be71e1c6c9c5bda181c6af6"
 TELEGRAM_BOT_TOKEN = "7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU"
 VIRUSTOTAL_API_URL = "https://www.virustotal.com/api/v3"
-MAX_FILE_SIZE = 600 * 1024 * 1024  # 600 MB
+MAX_FILE_SIZE = 300 * 1024 * 1024  # 300 MB
 
 
 class VirusTotalScanner:
@@ -110,13 +110,16 @@ def format_file_results(data: dict) -> str:
         return "❌ Не удалось получить данные анализа"
     
     data_obj = data["data"]
+    attributes = data_obj.get("attributes", {})
     
-    # Проверяем статус анализа
-    status = data_obj.get("attributes", {}).get("status", "unknown")
+    # Проверяем статус анализа (для новых анализов)
+    status = attributes.get("status", None)
     
-    if status == "completed":
-        stats = data_obj.get("attributes", {}).get("stats", {})
-        results = data_obj.get("attributes", {}).get("results", {})
+    # Для отчетов по хешу используем last_analysis_results и last_analysis_stats
+    if status is None or status == "completed":
+        # Пытаемся получить результаты из анализа или из отчета по хешу
+        stats = attributes.get("stats", {}) or attributes.get("last_analysis_stats", {})
+        results = attributes.get("results", {}) or attributes.get("last_analysis_results", {})
         
         malicious = stats.get("malicious", 0)
         suspicious = stats.get("suspicious", 0)
@@ -178,11 +181,11 @@ def format_file_results(data: dict) -> str:
                 message += f"\n... и еще {len(results) - 30} антивирусов\n"
         
         # Информация о файле
-        file_info = data_obj.get("attributes", {}).get("meaningful_name", "")
+        file_info = attributes.get("meaningful_name", "") or attributes.get("names", [""])[0] if attributes.get("names") else ""
         if file_info:
             message += f"\n📄 **Файл**: {file_info}\n"
         
-        sha256 = data_obj.get("attributes", {}).get("sha256", "")
+        sha256 = attributes.get("sha256", "")
         if sha256:
             message += f"🔐 **SHA256**: `{sha256[:16]}...`\n"
         
@@ -303,7 +306,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 📖 **Справка по использованию бота:**
 
 **Проверка файлов:**
-1. Отправьте файл боту (до 600 МБ)
+1. Отправьте файл боту (до 300 МБ)
 2. Бот загрузит файл в VirusTotal
 3. Дождитесь результатов анализа
 4. Получите детальный отчет от всех антивирусов
@@ -389,14 +392,73 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         # Инициализируем сканер
         scanner = VirusTotalScanner(VIRUSTOTAL_API_KEY)
         
-        # Загружаем файл в VirusTotal
+        # Проверяем размер файла для VirusTotal (лимит 32 МБ для прямой загрузки)
+        VIRUSTOTAL_UPLOAD_LIMIT = 32 * 1024 * 1024  # 32 MB
+        file_size = os.path.getsize(file_path)
+        
+        if file_size > VIRUSTOTAL_UPLOAD_LIMIT:
+            # Для больших файлов используем проверку по хешу
+            await status_msg.edit_text("📊 Файл большой, вычисляю хеш для проверки...")
+            
+            # Вычисляем SHA256 файла
+            sha256_hash = hashlib.sha256()
+            with open(file_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(chunk)
+            file_hash = sha256_hash.hexdigest()
+            
+            # Получаем отчет по хешу
+            await status_msg.edit_text("🔍 Проверяю файл по хешу через все антивирусы...")
+            report_result = scanner.get_file_report(file_hash)
+            
+            if "error" not in report_result and "data" in report_result:
+                results_text = format_file_results(report_result)
+                await status_msg.edit_text(results_text, parse_mode='Markdown')
+            else:
+                await status_msg.edit_text(
+                    "⚠️ Файл не найден в базе VirusTotal.\n\n"
+                    "Для файлов больше 32 МБ VirusTotal требует прямую загрузку через веб-интерфейс.\n"
+                    "Попробуйте загрузить файл на https://www.virustotal.com вручную."
+                )
+            
+            os.remove(file_path)
+            return
+        
+        # Для файлов до 32 МБ загружаем напрямую
         await status_msg.edit_text("📤 Загружаю файл в VirusTotal...")
         upload_result = scanner.upload_file(file_path)
         
         if "error" in upload_result:
-            await status_msg.edit_text(f"❌ Ошибка при загрузке файла: {upload_result['error']}")
-            os.remove(file_path)
-            return
+            error_msg = str(upload_result.get("error", "")).lower()
+            if "too big" in error_msg or "file is too big" in error_msg:
+                # Если файл слишком большой, пробуем через хеш
+                await status_msg.edit_text("📊 Файл слишком большой для прямой загрузки. Вычисляю хеш...")
+                
+                sha256_hash = hashlib.sha256()
+                with open(file_path, 'rb') as f:
+                    for chunk in iter(lambda: f.read(4096), b""):
+                        sha256_hash.update(chunk)
+                file_hash = sha256_hash.hexdigest()
+                
+                await status_msg.edit_text("🔍 Проверяю файл по хешу через все антивирусы...")
+                report_result = scanner.get_file_report(file_hash)
+                
+                if "error" not in report_result and "data" in report_result:
+                    results_text = format_file_results(report_result)
+                    await status_msg.edit_text(results_text, parse_mode='Markdown')
+                else:
+                    await status_msg.edit_text(
+                        "⚠️ Файл не найден в базе VirusTotal.\n\n"
+                        "Для файлов больше 32 МБ VirusTotal требует прямую загрузку через веб-интерфейс.\n"
+                        "Попробуйте загрузить файл на https://www.virustotal.com вручную."
+                    )
+                
+                os.remove(file_path)
+                return
+            else:
+                await status_msg.edit_text(f"❌ Ошибка при загрузке файла: {upload_result.get('error', 'Неизвестная ошибка')}")
+                os.remove(file_path)
+                return
         
         analysis_id = upload_result.get("data", {}).get("id")
         if not analysis_id:
