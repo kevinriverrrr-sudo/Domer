@@ -7,23 +7,110 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.constants import ParseMode
 
-# Íàñòðîéêè
+# Настройки
 BOT_TOKEN = "8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0"
 ADMIN_ID = 7694543415
 
-# Ôàéëû äëÿ õðàíåíèÿ äàííûõ
+# Файлы для хранения данных
 CODES_FILE = "shared_codes.json"
 BLOCKED_USERS_FILE = "blocked_users.json"
 BOT_STATUS_FILE = "bot_status.json"
+LANGUAGES_FILE = "user_languages.json"
 
-# Íàñòðîéêà ëîãèðîâàíèÿ
+# Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Çàãðóçêà äàííûõ
+# Локализация
+TEXTS = {
+    'ru': {
+        'welcome': '👋 Добро пожаловать!\n\nВыберите действие:',
+        'admin_panel_available': '\n\n🔐 Доступна админ панель: /admin',
+        'get_code': '🔑 Получить код',
+        'share_code': '📤 Поделиться кодом',
+        'blocked': '❌ Вы заблокированы и не можете использовать бота.',
+        'bot_disabled': '⏸ Бот временно выключен.',
+        'maintenance': '🔧 Бот находится на техническом обслуживании. Пожалуйста, попробуйте позже.',
+        'code_message': 'Уважаемый @{username} ({first_name}), хотим сообщить вам, что если вдруг вы получите код, вы должны выслать в ответ.',
+        'yes': '✅ Да',
+        'no': '❌ Нет',
+        'code_issued': '✅ Код успешно выдан!\n\n🔑 Ваш код: <code>{code}</code>\n\nИспользуйте его на сайте cto.new',
+        'code_refused': '❌ Вы отказались от получения кода.',
+        'share_code_prompt': '📤 Поделитесь кодом:\n\nОтправьте код, которым хотите поделиться с другими пользователями.',
+        'code_added': '✅ Код успешно добавлен! Другие пользователи смогут его использовать.',
+        'use_buttons': 'Используйте кнопки для навигации.',
+        'admin_panel': '🔐 Админ панель',
+        'no_admin_access': '❌ У вас нет доступа к админ панели.',
+        'codes_empty': '📋 Список кодов пуст.',
+        'shared_codes': '📋 Поделенные коды:\n\n',
+        'code_item': '{idx}. Код: <code>{code}</code>\n   Пользователь: @{username} ({first_name})\n   ID: {user_id}\n   Время: {timestamp}\n\n',
+        'block_user_prompt': '🚫 Отправьте ID пользователя для блокировки:\n\nИспользуйте /cancel для отмены.',
+        'no_blocked_users': '✅ Заблокированных пользователей нет.',
+        'blocked_users_list': '🚫 Заблокированные пользователи:\n\n',
+        'unblock_user_prompt': '\nОтправьте ID пользователя для разблокировки:\n\nИспользуйте /cancel для отмены.',
+        'maintenance_enabled': '🔧 Режим технического обслуживания включен.',
+        'maintenance_disabled': '🔧 Режим технического обслуживания выключен.',
+        'bot_disabled_msg': '⏸ Бот выключен.',
+        'bot_enabled_msg': '▶️ Бот включен.',
+        'user_blocked': '✅ Пользователь {id} заблокирован.',
+        'user_already_blocked': '⚠️ Пользователь {id} уже заблокирован.',
+        'user_unblocked': '✅ Пользователь {id} разблокирован.',
+        'user_not_blocked': '⚠️ Пользователь {id} не был заблокирован.',
+        'invalid_id': '❌ Неверный формат ID. Отправьте числовой ID.',
+        'unblock_error': '❌ Ошибка при разблокировке.',
+        'action_cancelled': '❌ Действие отменено.',
+        'cancelled': '❌ Отменено.',
+        'language_changed': '🌐 Язык изменен на русский.',
+        'select_language': '🌐 Выберите язык / Select language:',
+        'current_language': 'Текущий язык: Русский'
+    },
+    'en': {
+        'welcome': '👋 Welcome!\n\nChoose an action:',
+        'admin_panel_available': '\n\n🔐 Admin panel available: /admin',
+        'get_code': '🔑 Get code',
+        'share_code': '📤 Share code',
+        'blocked': '❌ You are blocked and cannot use the bot.',
+        'bot_disabled': '⏸ Bot is temporarily disabled.',
+        'maintenance': '🔧 Bot is under maintenance. Please try again later.',
+        'code_message': 'Dear @{username} ({first_name}), we want to inform you that if you receive a code, you must send a reply.',
+        'yes': '✅ Yes',
+        'no': '❌ No',
+        'code_issued': '✅ Code successfully issued!\n\n🔑 Your code: <code>{code}</code>\n\nUse it on cto.new website',
+        'code_refused': '❌ You refused to receive the code.',
+        'share_code_prompt': '📤 Share code:\n\nSend the code you want to share with other users.',
+        'code_added': '✅ Code successfully added! Other users will be able to use it.',
+        'use_buttons': 'Use buttons for navigation.',
+        'admin_panel': '🔐 Admin panel',
+        'no_admin_access': '❌ You do not have access to the admin panel.',
+        'codes_empty': '📋 Code list is empty.',
+        'shared_codes': '📋 Shared codes:\n\n',
+        'code_item': '{idx}. Code: <code>{code}</code>\n   User: @{username} ({first_name})\n   ID: {user_id}\n   Time: {timestamp}\n\n',
+        'block_user_prompt': '🚫 Send user ID to block:\n\nUse /cancel to cancel.',
+        'no_blocked_users': '✅ No blocked users.',
+        'blocked_users_list': '🚫 Blocked users:\n\n',
+        'unblock_user_prompt': '\nSend user ID to unblock:\n\nUse /cancel to cancel.',
+        'maintenance_enabled': '🔧 Maintenance mode enabled.',
+        'maintenance_disabled': '🔧 Maintenance mode disabled.',
+        'bot_disabled_msg': '⏸ Bot disabled.',
+        'bot_enabled_msg': '▶️ Bot enabled.',
+        'user_blocked': '✅ User {id} blocked.',
+        'user_already_blocked': '⚠️ User {id} is already blocked.',
+        'user_unblocked': '✅ User {id} unblocked.',
+        'user_not_blocked': '⚠️ User {id} was not blocked.',
+        'invalid_id': '❌ Invalid ID format. Send a numeric ID.',
+        'unblock_error': '❌ Error unblocking.',
+        'action_cancelled': '❌ Action cancelled.',
+        'cancelled': '❌ Cancelled.',
+        'language_changed': '🌐 Language changed to English.',
+        'select_language': '🌐 Выберите язык / Select language:',
+        'current_language': 'Current language: English'
+    }
+}
+
+# Загрузка данных
 def load_json(file_path, default={}):
     if os.path.exists(file_path):
         try:
@@ -37,7 +124,22 @@ def save_json(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# Çàãðóçêà äàííûõ ïðè ñòàðòå (íå èñïîëüçóåòñÿ íàïðÿìóþ, äàííûå çàãðóæàþòñÿ ïðè êàæäîì îáðàùåíèè)
+# Получение языка пользователя
+def get_user_language(user_id):
+    languages = load_json(LANGUAGES_FILE, {})
+    return languages.get(str(user_id), 'ru')
+
+# Сохранение языка пользователя
+def set_user_language(user_id, lang):
+    languages = load_json(LANGUAGES_FILE, {})
+    languages[str(user_id)] = lang
+    save_json(LANGUAGES_FILE, languages)
+
+# Получение текста по ключу
+def t(user_id, key, **kwargs):
+    lang = get_user_language(user_id)
+    text = TEXTS[lang].get(key, TEXTS['ru'].get(key, key))
+    return text.format(**kwargs) if kwargs else text
 
 def is_blocked(user_id):
     blocked_users_list = load_json(BLOCKED_USERS_FILE, [])
@@ -54,89 +156,106 @@ def is_maintenance_mode():
     bot_status_data = load_json(BOT_STATUS_FILE, {"maintenance": False, "enabled": True})
     return bot_status_data.get("maintenance", False)
 
-# Ãëàâíîå ìåíþ
-def get_main_keyboard():
+# Главное меню
+def get_main_keyboard(user_id):
+    lang = get_user_language(user_id)
     keyboard = [
-        [KeyboardButton("?? Ïîëó÷èòü êîä")],
-        [KeyboardButton("?? Ïîäåëèòüñÿ êîäîì")]
+        [KeyboardButton(t(user_id, 'get_code'))],
+        [KeyboardButton(t(user_id, 'share_code'))]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-# Àäìèí ïàíåëü
-def get_admin_keyboard():
+# Админ панель
+def get_admin_keyboard(user_id):
     keyboard = [
-        [InlineKeyboardButton("?? Ïîñìîòðåòü êîäû", callback_data="admin_view_codes")],
-        [InlineKeyboardButton("?? Çàáëîêèðîâàòü ïîëüçîâàòåëÿ", callback_data="admin_block_user")],
-        [InlineKeyboardButton("? Ðàçáëîêèðîâàòü ïîëüçîâàòåëÿ", callback_data="admin_unblock_user")],
-        [InlineKeyboardButton("?? Òåõíè÷åñêîå îáñëóæèâàíèå", callback_data="admin_maintenance")],
-        [InlineKeyboardButton("? Âûêëþ÷èòü áîòà", callback_data="admin_disable_bot")],
-        [InlineKeyboardButton("?? Âêëþ÷èòü áîòà", callback_data="admin_enable_bot")]
+        [InlineKeyboardButton("📋 Посмотреть коды" if get_user_language(user_id) == 'ru' else "📋 View codes", callback_data="admin_view_codes")],
+        [InlineKeyboardButton("🚫 Заблокировать пользователя" if get_user_language(user_id) == 'ru' else "🚫 Block user", callback_data="admin_block_user")],
+        [InlineKeyboardButton("✅ Разблокировать пользователя" if get_user_language(user_id) == 'ru' else "✅ Unblock user", callback_data="admin_unblock_user")],
+        [InlineKeyboardButton("🔧 Техническое обслуживание" if get_user_language(user_id) == 'ru' else "🔧 Maintenance", callback_data="admin_maintenance")],
+        [InlineKeyboardButton("⏸ Выключить бота" if get_user_language(user_id) == 'ru' else "⏸ Disable bot", callback_data="admin_disable_bot")],
+        [InlineKeyboardButton("▶️ Включить бота" if get_user_language(user_id) == 'ru' else "▶️ Enable bot", callback_data="admin_enable_bot")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# Îáðàáîò÷èê êîìàíäû /start
+# Клавиатура выбора языка
+def get_language_keyboard():
+    keyboard = [
+        [InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru")],
+        [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     if is_blocked(user_id):
-        await update.message.reply_text("? Âû çàáëîêèðîâàíû è íå ìîæåòå èñïîëüçîâàòü áîòà.")
+        await update.message.reply_text(t(user_id, 'blocked'))
         return
     
     if not is_bot_enabled():
-        await update.message.reply_text("? Áîò âðåìåííî âûêëþ÷åí.")
+        await update.message.reply_text(t(user_id, 'bot_disabled'))
         return
     
     if is_maintenance_mode():
-        await update.message.reply_text("?? Áîò íàõîäèòñÿ íà òåõíè÷åñêîì îáñëóæèâàíèè. Ïîæàëóéñòà, ïîïðîáóéòå ïîçæå.")
+        await update.message.reply_text(t(user_id, 'maintenance'))
         return
     
-    # Ïðèâåòñòâåííûé ñìàéëèê Telegram
-    welcome_text = "?? Äîáðî ïîæàëîâàòü!\n\nÂûáåðèòå äåéñòâèå:"
+    welcome_text = t(user_id, 'welcome')
     
     if is_admin(user_id):
-        welcome_text += "\n\n?? Äîñòóïíà àäìèí ïàíåëü: /admin"
+        welcome_text += t(user_id, 'admin_panel_available')
     
     await update.message.reply_text(
         welcome_text,
-        reply_markup=get_main_keyboard()
+        reply_markup=get_main_keyboard(user_id)
     )
 
-# Îáðàáîò÷èê êîìàíäû /admin
+# Обработчик команды /language или /lang
+async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    
+    await update.message.reply_text(
+        t(user_id, 'select_language'),
+        reply_markup=get_language_keyboard()
+    )
+
+# Обработчик команды /admin
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     if not is_admin(user_id):
-        await update.message.reply_text("? Ó âàñ íåò äîñòóïà ê àäìèí ïàíåëè.")
+        await update.message.reply_text(t(user_id, 'no_admin_access'))
         return
     
     await update.message.reply_text(
-        "?? Àäìèí ïàíåëü",
-        reply_markup=get_admin_keyboard()
+        t(user_id, 'admin_panel'),
+        reply_markup=get_admin_keyboard(user_id)
     )
 
-# Îáðàáîò÷èê êíîïêè "Ïîëó÷èòü êîä"
+# Обработчик кнопки "Получить код"
 async def get_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     username = update.effective_user.username or update.effective_user.first_name
-    first_name = update.effective_user.first_name or "Ïîëüçîâàòåëü"
+    first_name = update.effective_user.first_name or ("Пользователь" if get_user_language(user_id) == 'ru' else "User")
     
     if is_blocked(user_id):
-        await update.message.reply_text("? Âû çàáëîêèðîâàíû è íå ìîæåòå èñïîëüçîâàòü áîòà.")
+        await update.message.reply_text(t(user_id, 'blocked'))
         return
     
     if not is_bot_enabled():
-        await update.message.reply_text("? Áîò âðåìåííî âûêëþ÷åí.")
+        await update.message.reply_text(t(user_id, 'bot_disabled'))
         return
     
     if is_maintenance_mode():
-        await update.message.reply_text("?? Áîò íàõîäèòñÿ íà òåõíè÷åñêîì îáñëóæèâàíèè. Ïîæàëóéñòà, ïîïðîáóéòå ïîçæå.")
+        await update.message.reply_text(t(user_id, 'maintenance'))
         return
     
-    message_text = f"Óâàæàåìûé @{username} ({first_name}), õîòèì ñîîáùèòü âàì, ÷òî åñëè âäðóã âû ïîëó÷èòå êîä, âû äîëæíû âûñëàòü â îòâåò."
+    message_text = t(user_id, 'code_message', username=username, first_name=first_name)
     
     keyboard = [
-        [InlineKeyboardButton("? Äà", callback_data=f"code_confirm_yes_{user_id}")],
-        [InlineKeyboardButton("? Íåò", callback_data=f"code_confirm_no_{user_id}")]
+        [InlineKeyboardButton(t(user_id, 'yes'), callback_data=f"code_confirm_yes_{user_id}")],
+        [InlineKeyboardButton(t(user_id, 'no'), callback_data=f"code_confirm_no_{user_id}")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -146,54 +265,50 @@ async def get_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.HTML
     )
 
-# Îáðàáîò÷èê ïîäòâåðæäåíèÿ ïîëó÷åíèÿ êîäà
+# Обработчик подтверждения получения кода
 async def code_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     user_id = query.from_user.id
     data = query.data.split("_")
-    action = data[2]  # yes èëè no
+    action = data[2]  # yes или no
     
     if action == "yes":
-        # Ãåíåðèðóåì êîä (â ðåàëüíîñòè çäåñü äîëæåí áûòü çàïðîñ ê cto.new API)
-        # Äëÿ ïðèìåðà èñïîëüçóåì ïðîñòîé ôîðìàò
         code = f"CTO-{user_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         
         await query.edit_message_text(
-            f"? Êîä óñïåøíî âûäàí!\n\n?? Âàø êîä: <code>{code}</code>\n\nÈñïîëüçóéòå åãî íà ñàéòå cto.new",
+            t(user_id, 'code_issued', code=code),
             parse_mode=ParseMode.HTML
         )
     else:
-        await query.edit_message_text("? Âû îòêàçàëèñü îò ïîëó÷åíèÿ êîäà.")
+        await query.edit_message_text(t(user_id, 'code_refused'))
 
-# Îáðàáîò÷èê êíîïêè "Ïîäåëèòüñÿ êîäîì"
+# Обработчик кнопки "Поделиться кодом"
 async def share_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     if is_blocked(user_id):
-        await update.message.reply_text("? Âû çàáëîêèðîâàíû è íå ìîæåòå èñïîëüçîâàòü áîòà.")
+        await update.message.reply_text(t(user_id, 'blocked'))
         return
     
     if not is_bot_enabled():
-        await update.message.reply_text("? Áîò âðåìåííî âûêëþ÷åí.")
+        await update.message.reply_text(t(user_id, 'bot_disabled'))
         return
     
     if is_maintenance_mode():
-        await update.message.reply_text("?? Áîò íàõîäèòñÿ íà òåõíè÷åñêîì îáñëóæèâàíèè. Ïîæàëóéñòà, ïîïðîáóéòå ïîçæå.")
+        await update.message.reply_text(t(user_id, 'maintenance'))
         return
     
-    await update.message.reply_text(
-        "?? Ïîäåëèòåñü êîäîì:\n\nÎòïðàâüòå êîä, êîòîðûì õîòèòå ïîäåëèòüñÿ ñ äðóãèìè ïîëüçîâàòåëÿìè."
-    )
+    await update.message.reply_text(t(user_id, 'share_code_prompt'))
     context.user_data['waiting_for_code'] = True
 
-# Îáðàáîò÷èê òåêñòîâûõ ñîîáùåíèé
+# Обработчик текстовых сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     text = update.message.text
     
-    # Ïðîâåðêà àäìèíñêèõ äåéñòâèé (ïðèîðèòåò)
+    # Проверка админских действий (приоритет)
     if is_admin(user_id):
         admin_action = context.user_data.get('admin_action')
         if admin_action == 'block':
@@ -204,18 +319,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     blocked_users_list.append(str(target_id))
                     save_json(BLOCKED_USERS_FILE, blocked_users_list)
                     await update.message.reply_text(
-                        f"? Ïîëüçîâàòåëü {target_id} çàáëîêèðîâàí.",
-                        reply_markup=get_admin_keyboard()
+                        t(user_id, 'user_blocked', id=target_id),
+                        reply_markup=get_admin_keyboard(user_id)
                     )
                 else:
                     await update.message.reply_text(
-                        f"?? Ïîëüçîâàòåëü {target_id} óæå çàáëîêèðîâàí.",
-                        reply_markup=get_admin_keyboard()
+                        t(user_id, 'user_already_blocked', id=target_id),
+                        reply_markup=get_admin_keyboard(user_id)
                     )
             except ValueError:
                 await update.message.reply_text(
-                    "? Íåâåðíûé ôîðìàò ID. Îòïðàâüòå ÷èñëîâîé ID.",
-                    reply_markup=get_admin_keyboard()
+                    t(user_id, 'invalid_id'),
+                    reply_markup=get_admin_keyboard(user_id)
                 )
             context.user_data['admin_action'] = None
             return
@@ -227,18 +342,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     blocked_users_list.remove(target_id)
                     save_json(BLOCKED_USERS_FILE, blocked_users_list)
                     await update.message.reply_text(
-                        f"? Ïîëüçîâàòåëü {target_id} ðàçáëîêèðîâàí.",
-                        reply_markup=get_admin_keyboard()
+                        t(user_id, 'user_unblocked', id=target_id),
+                        reply_markup=get_admin_keyboard(user_id)
                     )
                 else:
                     await update.message.reply_text(
-                        f"?? Ïîëüçîâàòåëü {target_id} íå áûë çàáëîêèðîâàí.",
-                        reply_markup=get_admin_keyboard()
+                        t(user_id, 'user_not_blocked', id=target_id),
+                        reply_markup=get_admin_keyboard(user_id)
                     )
             except:
                 await update.message.reply_text(
-                    "? Îøèáêà ïðè ðàçáëîêèðîâêå.",
-                    reply_markup=get_admin_keyboard()
+                    t(user_id, 'unblock_error'),
+                    reply_markup=get_admin_keyboard(user_id)
                 )
             context.user_data['admin_action'] = None
             return
@@ -249,10 +364,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_bot_enabled() or is_maintenance_mode():
         return
     
-    # Åñëè ïîëüçîâàòåëü äåëèòñÿ êîäîì
+    # Если пользователь делится кодом
     if context.user_data.get('waiting_for_code'):
         username = update.effective_user.username or update.effective_user.first_name
-        first_name = update.effective_user.first_name or "Ïîëüçîâàòåëü"
+        first_name = update.effective_user.first_name or ("Пользователь" if get_user_language(user_id) == 'ru' else "User")
         
         code_data = {
             "code": text,
@@ -269,23 +384,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['waiting_for_code'] = False
         
         await update.message.reply_text(
-            "? Êîä óñïåøíî äîáàâëåí! Äðóãèå ïîëüçîâàòåëè ñìîãóò åãî èñïîëüçîâàòü.",
-            reply_markup=get_main_keyboard()
+            t(user_id, 'code_added'),
+            reply_markup=get_main_keyboard(user_id)
         )
         return
     
-    # Îáðàáîòêà îáû÷íûõ ñîîáùåíèé
-    if text == "?? Ïîëó÷èòü êîä":
+    # Обработка обычных сообщений
+    if text == t(user_id, 'get_code') or text == "🔑 Получить код" or text == "🔑 Get code":
         await get_code(update, context)
-    elif text == "?? Ïîäåëèòüñÿ êîäîì":
+    elif text == t(user_id, 'share_code') or text == "📤 Поделиться кодом" or text == "📤 Share code":
         await share_code(update, context)
     else:
         await update.message.reply_text(
-            "Èñïîëüçóéòå êíîïêè äëÿ íàâèãàöèè.",
-            reply_markup=get_main_keyboard()
+            t(user_id, 'use_buttons'),
+            reply_markup=get_main_keyboard(user_id)
         )
 
-# Îáðàáîò÷èêè àäìèí ïàíåëè
+# Обработчики админ панели
 async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -293,7 +408,7 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     
     if not is_admin(user_id):
-        await query.edit_message_text("? Ó âàñ íåò äîñòóïà ê àäìèí ïàíåëè.")
+        await query.edit_message_text(t(user_id, 'no_admin_access'))
         return
     
     data = query.data
@@ -302,26 +417,30 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         codes_list = load_json(CODES_FILE, [])
         if not codes_list:
             await query.edit_message_text(
-                "?? Ñïèñîê êîäîâ ïóñò.",
-                reply_markup=get_admin_keyboard()
+                t(user_id, 'codes_empty'),
+                reply_markup=get_admin_keyboard(user_id)
             )
         else:
-            codes_text = "?? Ïîäåëåííûå êîäû:\n\n"
-            for idx, code_data in enumerate(codes_list[-20:], 1):  # Ïîñëåäíèå 20 êîäîâ
-                codes_text += f"{idx}. Êîä: <code>{code_data['code']}</code>\n"
-                codes_text += f"   Ïîëüçîâàòåëü: @{code_data.get('username', 'N/A')} ({code_data.get('first_name', 'N/A')})\n"
-                codes_text += f"   ID: {code_data['user_id']}\n"
-                codes_text += f"   Âðåìÿ: {code_data.get('timestamp', 'N/A')}\n\n"
+            codes_text = t(user_id, 'shared_codes')
+            for idx, code_data in enumerate(codes_list[-20:], 1):
+                codes_text += t(user_id, 'code_item',
+                    idx=idx,
+                    code=code_data['code'],
+                    username=code_data.get('username', 'N/A'),
+                    first_name=code_data.get('first_name', 'N/A'),
+                    user_id=code_data['user_id'],
+                    timestamp=code_data.get('timestamp', 'N/A')
+                )
             
             await query.edit_message_text(
                 codes_text,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_admin_keyboard()
+                reply_markup=get_admin_keyboard(user_id)
             )
     
     elif data == "admin_block_user":
         await query.edit_message_text(
-            "?? Îòïðàâüòå ID ïîëüçîâàòåëÿ äëÿ áëîêèðîâêè:\n\nÈñïîëüçóéòå /cancel äëÿ îòìåíû.",
+            t(user_id, 'block_user_prompt'),
             reply_markup=None
         )
         context.user_data['admin_action'] = 'block'
@@ -330,16 +449,16 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         blocked_users_list = load_json(BLOCKED_USERS_FILE, [])
         if not blocked_users_list:
             await query.edit_message_text(
-                "? Çàáëîêèðîâàííûõ ïîëüçîâàòåëåé íåò.",
-                reply_markup=get_admin_keyboard()
+                t(user_id, 'no_blocked_users'),
+                reply_markup=get_admin_keyboard(user_id)
             )
         else:
-            blocked_text = "?? Çàáëîêèðîâàííûå ïîëüçîâàòåëè:\n\n"
-            for user_id in blocked_users_list:
-                blocked_text += f"ID: {user_id}\n"
+            blocked_text = t(user_id, 'blocked_users_list')
+            for uid in blocked_users_list:
+                blocked_text += f"ID: {uid}\n"
             
             await query.edit_message_text(
-                blocked_text + "\nÎòïðàâüòå ID ïîëüçîâàòåëÿ äëÿ ðàçáëîêèðîâêè:\n\nÈñïîëüçóéòå /cancel äëÿ îòìåíû.",
+                blocked_text + t(user_id, 'unblock_user_prompt'),
                 reply_markup=None
             )
             context.user_data['admin_action'] = 'unblock'
@@ -348,10 +467,10 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_status_data = load_json(BOT_STATUS_FILE, {"maintenance": False, "enabled": True})
         bot_status_data["maintenance"] = not bot_status_data["maintenance"]
         save_json(BOT_STATUS_FILE, bot_status_data)
-        status_text = "âêëþ÷åí" if bot_status_data["maintenance"] else "âûêëþ÷åí"
+        status_text = t(user_id, 'maintenance_enabled' if bot_status_data["maintenance"] else 'maintenance_disabled')
         await query.edit_message_text(
-            f"?? Ðåæèì òåõíè÷åñêîãî îáñëóæèâàíèÿ {status_text}.",
-            reply_markup=get_admin_keyboard()
+            status_text,
+            reply_markup=get_admin_keyboard(user_id)
         )
     
     elif data == "admin_disable_bot":
@@ -359,8 +478,8 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_status_data["enabled"] = False
         save_json(BOT_STATUS_FILE, bot_status_data)
         await query.edit_message_text(
-            "? Áîò âûêëþ÷åí.",
-            reply_markup=get_admin_keyboard()
+            t(user_id, 'bot_disabled_msg'),
+            reply_markup=get_admin_keyboard(user_id)
         )
     
     elif data == "admin_enable_bot":
@@ -369,99 +488,58 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_status_data["maintenance"] = False
         save_json(BOT_STATUS_FILE, bot_status_data)
         await query.edit_message_text(
-            "?? Áîò âêëþ÷åí.",
-            reply_markup=get_admin_keyboard()
+            t(user_id, 'bot_enabled_msg'),
+            reply_markup=get_admin_keyboard(user_id)
         )
 
-# Îáðàáîò÷èê àäìèíñêèõ äåéñòâèé ÷åðåç ñîîáùåíèÿ
-async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+# Обработчик выбора языка
+async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
     
-    if not is_admin(user_id):
-        return
+    user_id = query.from_user.id
+    lang = query.data.split("_")[1]  # ru или en
     
-    admin_action = context.user_data.get('admin_action')
+    set_user_language(user_id, lang)
     
-    if not admin_action:
-        return
-    
-    if admin_action == 'block':
-        try:
-            target_id = int(update.message.text)
-            if str(target_id) not in blocked_users:
-                blocked_users.append(str(target_id))
-                save_json(BLOCKED_USERS_FILE, blocked_users)
-                await update.message.reply_text(
-                    f"? Ïîëüçîâàòåëü {target_id} çàáëîêèðîâàí.",
-                    reply_markup=get_admin_keyboard()
-                )
-            else:
-                await update.message.reply_text(
-                    f"?? Ïîëüçîâàòåëü {target_id} óæå çàáëîêèðîâàí.",
-                    reply_markup=get_admin_keyboard()
-                )
-        except ValueError:
-            await update.message.reply_text(
-                "? Íåâåðíûé ôîðìàò ID. Îòïðàâüòå ÷èñëîâîé ID.",
-                reply_markup=get_admin_keyboard()
-            )
-        context.user_data['admin_action'] = None
-    
-    elif admin_action == 'unblock':
-        try:
-            target_id = str(update.message.text)
-            if target_id in blocked_users:
-                blocked_users.remove(target_id)
-                save_json(BLOCKED_USERS_FILE, blocked_users)
-                await update.message.reply_text(
-                    f"? Ïîëüçîâàòåëü {target_id} ðàçáëîêèðîâàí.",
-                    reply_markup=get_admin_keyboard()
-                )
-            else:
-                await update.message.reply_text(
-                    f"?? Ïîëüçîâàòåëü {target_id} íå áûë çàáëîêèðîâàí.",
-                    reply_markup=get_admin_keyboard()
-                )
-        except:
-            await update.message.reply_text(
-                "? Îøèáêà ïðè ðàçáëîêèðîâêå.",
-                reply_markup=get_admin_keyboard()
-            )
-        context.user_data['admin_action'] = None
+    await query.edit_message_text(t(user_id, 'language_changed'))
 
-# Êîìàíäà îòìåíû
+# Команда отмены
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     if is_admin(user_id) and context.user_data.get('admin_action'):
         context.user_data['admin_action'] = None
         await update.message.reply_text(
-            "? Äåéñòâèå îòìåíåíî.",
-            reply_markup=get_admin_keyboard()
+            t(user_id, 'action_cancelled'),
+            reply_markup=get_admin_keyboard(user_id)
         )
     elif context.user_data.get('waiting_for_code'):
         context.user_data['waiting_for_code'] = False
         await update.message.reply_text(
-            "? Îòìåíåíî.",
-            reply_markup=get_main_keyboard()
+            t(user_id, 'cancelled'),
+            reply_markup=get_main_keyboard(user_id)
         )
 
 def main():
-    # Ñîçäàíèå ïðèëîæåíèÿ
+    # Создание приложения
     application = Application.builder().token(BOT_TOKEN).build()
     
-    # Ðåãèñòðàöèÿ îáðàáîò÷èêîâ
+    # Регистрация обработчиков
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("admin", admin_panel))
     application.add_handler(CommandHandler("cancel", cancel))
+    application.add_handler(CommandHandler("language", language_command))
+    application.add_handler(CommandHandler("lang", language_command))
     application.add_handler(CallbackQueryHandler(code_confirm, pattern="^code_confirm_"))
     application.add_handler(CallbackQueryHandler(admin_callback, pattern="^admin_"))
+    application.add_handler(CallbackQueryHandler(language_callback, pattern="^lang_"))
     
-    # Îáðàáîò÷èê ñîîáùåíèé äîëæåí áûòü ïîñëåäíèì
+    # Обработчик сообщений должен быть последним
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Çàïóñê áîòà
-    logger.info("Áîò çàïóùåí!")
+    # Запуск бота
+    logger.info("Бот запущен!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':

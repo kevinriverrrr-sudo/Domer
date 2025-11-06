@@ -1,19 +1,6 @@
-2025-11-06 14:18:49,115 - __main__ - INFO - Áîò çàïóùåí!
-2025-11-06 14:18:49,435 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getMe "HTTP/1.1 200 OK"
-2025-11-06 14:18:49,535 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/deleteWebhook "HTTP/1.1 200 OK"
-2025-11-06 14:18:49,536 - telegram.ext.Application - INFO - Application started
-2025-11-06 14:18:59,845 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:09,946 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:20,047 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:30,149 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:37,817 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:38,257 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/sendMessage "HTTP/1.1 200 OK"
-2025-11-06 14:19:43,753 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:19:44,107 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/sendMessage "HTTP/1.1 200 OK"
-2025-11-06 14:19:53,855 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:03,957 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:14,057 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:24,158 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:34,260 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:44,360 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
-2025-11-06 14:20:54,460 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
+2025-11-06 14:21:45,804 - __main__ - INFO - Бот запущен!
+2025-11-06 14:21:46,123 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getMe "HTTP/1.1 200 OK"
+2025-11-06 14:21:46,223 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/deleteWebhook "HTTP/1.1 200 OK"
+2025-11-06 14:21:46,224 - telegram.ext.Application - INFO - Application started
+2025-11-06 14:21:56,528 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
+2025-11-06 14:22:06,628 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8588890122:AAF870IhnaQRmo_pn8OIVj_xH6skyNwVZy0/getUpdates "HTTP/1.1 200 OK"
