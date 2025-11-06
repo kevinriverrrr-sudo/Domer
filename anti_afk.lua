@@ -3,6 +3,13 @@
     Активация: /afk
 ]]
 
+local imgui = require 'mimgui'
+local inicfg = require 'inicfg'
+local se = require 'lib.samp.events'
+local encoding = require 'encoding'
+encoding.default = 'CP1251'
+u8 = encoding.UTF8
+
 local afkEnabled = false
 local afkThread = nil
 
@@ -78,19 +85,19 @@ end
 -- Обработчик команды /afk
 function cmd_afk()
     if not sampIsLocalPlayerSpawned() then
-        sampAddChatMessage("{FF0000}[Anti-AFK] {FFFFFF}Вы не заспавнены!", 0xFFFFFFFF)
+        sampAddChatMessage(u8"{FF0000}[Anti-AFK] {FFFFFF}Вы не заспавнены!", 0xFFFFFFFF)
         return
     end
     
     afkEnabled = not afkEnabled
     
     if afkEnabled then
-        sampAddChatMessage("{00FF00}[Anti-AFK] {FFFFFF}Анти-АФК включен", 0xFFFFFFFF)
+        sampAddChatMessage(u8"{00FF00}[Anti-AFK] {FFFFFF}Анти-АФК включен", 0xFFFFFFFF)
         
         -- Запускаем поток анти-АФК
         afkThread = lua_thread.create(performAntiAFK)
     else
-        sampAddChatMessage("{FF0000}[Anti-AFK] {FFFFFF}Анти-АФК выключен", 0xFFFFFFFF)
+        sampAddChatMessage(u8"{FF0000}[Anti-AFK] {FFFFFF}Анти-АФК выключен", 0xFFFFFFFF)
         
         -- Сбрасываем все клавиши
         setGameKeyState(KEY_UP, 0)
@@ -117,7 +124,7 @@ function main()
     end
     
     sampRegisterChatCommand("afk", cmd_afk)
-    sampAddChatMessage("{00FF00}[Anti-AFK] {FFFFFF}Скрипт загружен. Используйте /afk для включения/выключения", 0xFFFFFFFF)
+    sampAddChatMessage(u8"{00FF00}[Anti-AFK] {FFFFFF}Скрипт загружен. Используйте /afk для включения/выключения", 0xFFFFFFFF)
 end
 
 -- Очистка при выгрузке скрипта
