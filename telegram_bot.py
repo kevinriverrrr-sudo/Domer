@@ -23,7 +23,8 @@ GEMINI_API_KEY = "AIzaSyC-u6Of5R3wYfXXie6kwh5yAcyDq1HCNAc"
 
 # Настройка Gemini AI
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Используем доступную модель gemini-2.5-flash
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
