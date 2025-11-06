@@ -191,9 +191,7 @@ function main()
     end)
     
     -- Регистрация callback для ImGui
-    imgui.OnFrame(function()
-        if not window.v then return end
-        
+    imgui.OnFrame(function() return window.v end, function()
         imgui.SetNextWindowSize(imgui.ImVec2(400, 450), imgui.Cond.FirstUseEver)
         imgui.Begin(u8('Anti-AFK v' .. version), window, imgui.WindowFlags.None)
         
