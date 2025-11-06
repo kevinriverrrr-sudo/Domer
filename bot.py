@@ -2,6 +2,7 @@
 import logging
 import json
 import os
+import hashlib
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
@@ -18,6 +19,7 @@ BOT_STATUS_FILE = "bot_status.json"
 LANGUAGES_FILE = "user_languages.json"
 BOT_COPIES_FILE = "bot_copies.json"
 ORIGINAL_BOT_INFO_FILE = "original_bot_info.json"
+ISSUED_CODES_FILE = "issued_codes.json"
 
 # Настройка логирования
 logging.basicConfig(
@@ -73,7 +75,11 @@ TEXTS = {
         'create_bot_copy_prompt': '🤖 Отправьте токен нового бота от BotFather:\n\nИспользуйте /cancel для отмены.',
         'bot_copy_created': '✅ Копия бота успешно создана!\n\nТокен: <code>{token}</code>\n\nТеперь запустите этот бот с этим токеном.',
         'invalid_token': '❌ Неверный формат токена. Токен должен быть в формате: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
-        'copy_bot_info': '📋 Это копия бота\n\nОригинальный бот: @{original_username}\nСоздатель: @{creator_username}'
+        'copy_bot_info': '📋 Это копия бота\n\nОригинальный бот: @{original_username}\nСоздатель: @{creator_username}',
+        'code_valid': '✅ Код действителен',
+        'code_invalid': '❌ Код не действителен',
+        'code_validated': '✅ Спасибо! Код останется в базе данных.',
+        'code_removed': '✅ Код удален из базы данных.'
     },
     'en': {
         'welcome': '👋 Welcome!\n\nChoose an action:',
@@ -120,7 +126,11 @@ TEXTS = {
         'create_bot_copy_prompt': '🤖 Send the new bot token from BotFather:\n\nUse /cancel to cancel.',
         'bot_copy_created': '✅ Bot copy successfully created!\n\nToken: <code>{token}</code>\n\nNow run this bot with this token.',
         'invalid_token': '❌ Invalid token format. Token should be in format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
-        'copy_bot_info': '📋 This is a bot copy\n\nOriginal bot: @{original_username}\nCreator: @{creator_username}'
+        'copy_bot_info': '📋 This is a bot copy\n\nOriginal bot: @{original_username}\nCreator: @{creator_username}',
+        'code_valid': '✅ Code valid',
+        'code_invalid': '❌ Code invalid',
+        'code_validated': '✅ Thank you! Code will remain in database.',
+        'code_removed': '✅ Code removed from database.'
     }
 }
 
@@ -319,13 +329,29 @@ async def code_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         code_data = codes_list[0]
         code = code_data['code']
         
-        # Удаляем использованный код из списка
+        # Создаем хеш кода для идентификации
+        code_hash = hashlib.md5(f"{code}_{user_id}_{datetime.now().isoformat()}".encode()).hexdigest()[:12]
+        
+        # Временно удаляем код из списка (вернем обратно если действителен)
         codes_list.pop(0)
         save_json(CODES_FILE, codes_list)
         
+        # Сохраняем информацию о выданном коде для проверки валидности
+        issued_codes = load_json(ISSUED_CODES_FILE, {})
+        issued_codes[code_hash] = code_data
+        save_json(ISSUED_CODES_FILE, issued_codes)
+        
+        # Показываем код с кнопками валидности
+        keyboard = [
+            [InlineKeyboardButton(t(user_id, 'code_valid'), callback_data=f"code_valid_{code_hash}")],
+            [InlineKeyboardButton(t(user_id, 'code_invalid'), callback_data=f"code_invalid_{code_hash}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
         await query.edit_message_text(
-            t(user_id, 'code_issued', code=code),
-            parse_mode=ParseMode.HTML
+            t(user_id, 'code_issued', code=code) + "\n\n" + t(user_id, 'code_valid') + " / " + t(user_id, 'code_invalid') + "?",
+            parse_mode=ParseMode.HTML,
+            reply_markup=reply_markup
         )
     else:
         await query.edit_message_text(t(user_id, 'code_refused'))
@@ -598,6 +624,47 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         context.user_data['admin_action'] = 'create_copy'
 
+# Обработчик подтверждения валидности кода
+async def code_validity_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = query.from_user.id
+    data = query.data.split("_")
+    validity = data[1]  # valid или invalid
+    code_hash = data[2]  # хеш кода
+    
+    # Получаем информацию о выданном коде из файла
+    issued_codes = load_json(ISSUED_CODES_FILE, {})
+    code_data = issued_codes.get(code_hash)
+    
+    if not code_data:
+        await query.edit_message_text("❌ Информация о коде не найдена.")
+        return
+    
+    code = code_data['code']
+    
+    if validity == "valid":
+        # Код действителен - возвращаем его в конец списка
+        codes_list = load_json(CODES_FILE, [])
+        codes_list.append(code_data)
+        save_json(CODES_FILE, codes_list)
+        
+        await query.edit_message_text(
+            t(user_id, 'code_validated'),
+            parse_mode=ParseMode.HTML
+        )
+    elif validity == "invalid":
+        # Код не действителен - удаляем из базы (уже удален, просто подтверждаем)
+        await query.edit_message_text(
+            t(user_id, 'code_removed'),
+            parse_mode=ParseMode.HTML
+        )
+    
+    # Удаляем информацию о выданном коде из временного хранилища
+    issued_codes.pop(code_hash, None)
+    save_json(ISSUED_CODES_FILE, issued_codes)
+
 # Обработчик выбора языка
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -638,6 +705,7 @@ def main():
     application.add_handler(CommandHandler("language", language_command))
     application.add_handler(CommandHandler("lang", language_command))
     application.add_handler(CallbackQueryHandler(code_confirm, pattern="^code_confirm_"))
+    application.add_handler(CallbackQueryHandler(code_validity_callback, pattern="^code_(valid|invalid)_"))
     application.add_handler(CallbackQueryHandler(admin_callback, pattern="^admin_"))
     application.add_handler(CallbackQueryHandler(language_callback, pattern="^lang_"))
     
