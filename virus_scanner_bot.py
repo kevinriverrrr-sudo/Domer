@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 VIRUSTOTAL_API_KEY = "b3c6edf1e32e42feebebd9d485205b3f748e36cf1be71e1c6c9c5bda181c6af6"
 TELEGRAM_BOT_TOKEN = "7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU"
 VIRUSTOTAL_API_URL = "https://www.virustotal.com/api/v3"
-MAX_FILE_SIZE = 32 * 1024 * 1024  # 32 MB (лимит VirusTotal)
+MAX_FILE_SIZE = 600 * 1024 * 1024  # 600 MB
 
 
 class VirusTotalScanner:
@@ -303,7 +303,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 📖 **Справка по использованию бота:**
 
 **Проверка файлов:**
-1. Отправьте файл боту (до 32 МБ)
+1. Отправьте файл боту (до 600 МБ)
 2. Бот загрузит файл в VirusTotal
 3. Дождитесь результатов анализа
 4. Получите детальный отчет от всех антивирусов
