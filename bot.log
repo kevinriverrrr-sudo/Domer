@@ -1,0 +1,5 @@
+2025-11-06 13:05:07,667 - __main__ - INFO - Бот запущен!
+2025-11-06 13:05:07,977 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getMe "HTTP/1.1 200 OK"
+2025-11-06 13:05:08,077 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/deleteWebhook "HTTP/1.1 200 OK"
+2025-11-06 13:05:08,078 - telegram.ext.Application - INFO - Application started
+2025-11-06 13:05:18,385 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
