@@ -1,13 +1,11 @@
-local imgui = require('mimgui')
-local vector = require('vector3d')
-local faicons = require('fAwesome6')
-local sampev = require('lib.samp.events')
-local encoding = require('encoding')
+
+local imgui = require 'mimgui'
+local inicfg = require 'inicfg'
+local se = require 'lib.samp.events'
+local encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
-require("moonloader")
-local inicfg = require 'inicfg'
 local settings = inicfg.load({
     orvn = {
         speed = 1,
@@ -187,21 +185,23 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
     imgui.PushStyleVarFloat(imgui.StyleVar.Alpha, menuAlpha)
 
     local names = {
-        "OnFoot "..faicons("PERSON_WALKING"),
-        "InCar "..faicons("car"),
-        --"Unoccupied "..faicons("car"),
-        "Invisible "..faicons("EYE_LOW_VISION"),
-        "Settings "..faicons("gear"),
+        "OnFoot ".."рџљ¶",
+        "InCar ".."рџљ—",
+        --"Unoccupied ".."рџљ—",
+        "Invisible ".."рџ‘Ѓ",
+        "Settings ".."вљ™",
     }
 
     imgui.Begin("##multirvn", renderWindow, imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
+    imgui.SetCursorPos(imgui.ImVec2(10, 10))
+    imgui.TextColored(imgui.ImVec4(0.8, 0.8, 0.8, 1.0), "@MarkusGarantor")
     imgui.SetCursorPos(imgui.ImVec2((690/2.52), -45))
     local clrNormal = imgui.GetColorU32(imgui.Col.Button)
     local clrHover  = imgui.GetColorU32(imgui.Col.ButtonHovered)
     local clrActive = imgui.GetColorU32(imgui.Col.ButtonActive)
 
     imgui.SetCursorPos(imgui.ImVec2((690-40), 7))
-    if imgui.RoundedRectButton(faicons("XMARK"), 25, 25, 8, clrNormal, clrHover, clrActive) then
+    if imgui.RoundedRectButton("вњ•", 25, 25, 8, clrNormal, clrHover, clrActive) then
         menuStartTime = os.clock()
         menuAlpha = 1
         menuActive = false
@@ -230,7 +230,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
             imgui.Spacing()
             if MRvanka.orvn.active[0] then
                 imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Менять повороты рванки', MRvanka.orvn.rotate) then
+                if imgui.Checkbox(u8'РњРµРЅСЏС‚СЊ РїРѕРІРѕСЂРѕС‚С‹ СЂРІР°РЅРєРё', MRvanka.orvn.rotate) then
                     settings.orvn.rotate = MRvanka.orvn.rotate[0]
                     save()
                 end
@@ -240,7 +240,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
                     save()
                 end
                 --[[imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Плавный телепорт к жертве', MRvanka.orvn.coord) then
+                if imgui.Checkbox(u8'РџР»Р°РІРЅС‹Р№ С‚РµР»РµРїРѕСЂС‚ Рє Р¶РµСЂС‚РІРµ', MRvanka.orvn.coord) then
                     if not MRvanka.orvn.coord[0] then
                         if MRvanka.orvn.dist[0] > 25 then
                             MRvanka.orvn.dist[0] = 25
@@ -252,7 +252,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
                     save()
                 end]]
                 imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Игнорировать машину', MRvanka.orvn.ignorecar) then
+                if imgui.Checkbox(u8'РРіРЅРѕСЂРёСЂРѕРІР°С‚СЊ РјР°С€РёРЅСѓ', MRvanka.orvn.ignorecar) then
                     settings.orvn.ignorecar = MRvanka.orvn.ignorecar[0]
                     save()
                 end
@@ -264,17 +264,17 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
             end
             imgui.Spacing()
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Скорость по высоте', MRvanka.orvn.speed, false, 0.5, 1, '%0.1f') then
+            if imgui.CustomSlider(u8'РЎРєРѕСЂРѕСЃС‚СЊ РїРѕ РІС‹СЃРѕС‚Рµ', MRvanka.orvn.speed, false, 0.5, 1, '%0.1f') then
                 settings.orvn.speed = MRvanka.orvn.speed[0]
                 save()
             end
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Дистанция к жертве', MRvanka.orvn.dist, false, 5, MRvanka.orvn.coord[0] and 200 or 25, '%0.0f') then
+            if imgui.CustomSlider(u8'Р”РёСЃС‚Р°РЅС†РёСЏ Рє Р¶РµСЂС‚РІРµ', MRvanka.orvn.dist, false, 5, MRvanka.orvn.coord[0] and 200 or 25, '%0.0f') then
                 settings.orvn.dist = MRvanka.orvn.dist[0]
                 save()
             end
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Отнимать высоту', MRvanka.orvn.minusZ, false, 0, 1, '%0.2f') then
+            if imgui.CustomSlider(u8'РћС‚РЅРёРјР°С‚СЊ РІС‹СЃРѕС‚Сѓ', MRvanka.orvn.minusZ, false, 0, 1, '%0.2f') then
                 settings.orvn.minusZ = MRvanka.orvn.minusZ[0]
                 save()
             end
@@ -299,11 +299,11 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
             imgui.Spacing()
             if MRvanka.vrvn.active[0] then
                 imgui.SetCursorPosX(90)
-                imgui.Checkbox(u8'Обход коллизии (surf)', MRvanka.vrvn.bypasscol)
+                imgui.Checkbox(u8'РћР±С…РѕРґ РєРѕР»Р»РёР·РёРё (surf)', MRvanka.vrvn.bypasscol)
                 imgui.SameLine(280)
                 imgui.Checkbox(u8"Random Position", MRvanka.vrvn.rpos)
                 imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Менять повороты рванки##2', MRvanka.vrvn.rotate) then
+                if imgui.Checkbox(u8'РњРµРЅСЏС‚СЊ РїРѕРІРѕСЂРѕС‚С‹ СЂРІР°РЅРєРё##2', MRvanka.vrvn.rotate) then
                     settings.vrvn.rotate = MRvanka.vrvn.rotate[0]
                     save()
                 end
@@ -314,7 +314,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
                 end
                 imgui.SetCursorPosX(90)
                 --[[imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Плавный телепорт к жертве##2', MRvanka.vrvn.coord) then
+                if imgui.Checkbox(u8'РџР»Р°РІРЅС‹Р№ С‚РµР»РµРїРѕСЂС‚ Рє Р¶РµСЂС‚РІРµ##2', MRvanka.vrvn.coord) then
                     if not MRvanka.vrvn.coord[0] then
                         if MRvanka.vrvn.dist[0] > 25 then
                             MRvanka.vrvn.dist[0] = 25
@@ -337,7 +337,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
             end
             --[[if MRvanka.vrvn.slapper[0] and not MRvanka.vrvn.active[0] then
                 imgui.SetCursorPosX(90)
-                if imgui.Checkbox(u8'Плавный телепорт к жертве##2', MRvanka.vrvn.coord) then
+                if imgui.Checkbox(u8'РџР»Р°РІРЅС‹Р№ С‚РµР»РµРїРѕСЂС‚ Рє Р¶РµСЂС‚РІРµ##2', MRvanka.vrvn.coord) then
                     if not MRvanka.vrvn.coord[0] then
                         if MRvanka.vrvn.dist[0] > 25 then
                             MRvanka.vrvn.dist[0] = 25
@@ -350,12 +350,12 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
                 end
             end]]
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Отнимать высоту##2', MRvanka.vrvn.minusZ, false, 0, 1, '%0.2f') then
+            if imgui.CustomSlider(u8'РћС‚РЅРёРјР°С‚СЊ РІС‹СЃРѕС‚Сѓ##2', MRvanka.vrvn.minusZ, false, 0, 1, '%0.2f') then
                 settings.vrvn.minusZ = MRvanka.vrvn.minusZ[0]
                 save()
             end
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Дистанция##2', MRvanka.vrvn.dist, false, 5, MRvanka.vrvn.coord[0] and 200 or 25, '%0.2f') then
+            if imgui.CustomSlider(u8'Р”РёСЃС‚Р°РЅС†РёСЏ##2', MRvanka.vrvn.dist, false, 5, MRvanka.vrvn.coord[0] and 200 or 25, '%0.2f') then
                 settings.vrvn.dist = MRvanka.vrvn.dist[0]
                 save()
             end
@@ -380,7 +380,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
         --     imgui.Spacing()
         --     if MRvanka.urvn.rvanka[0] then
         --         imgui.SetCursorPosX(90)
-        --         if imgui.Checkbox(u8'Менять повороты рванки', MRvanka.urvn.rotate) then
+        --         if imgui.Checkbox(u8'РњРµРЅСЏС‚СЊ РїРѕРІРѕСЂРѕС‚С‹ СЂРІР°РЅРєРё', MRvanka.urvn.rotate) then
         --             settings.urvn.rotate = MRvanka.urvn.rotate[0]
         --             save()
         --         end
@@ -390,7 +390,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
         --             save()
         --         end
         --         imgui.SetCursorPosX(90)
-        --         if imgui.Checkbox(u8'Спавнить авто', MRvanka.urvn.destroy) then
+        --         if imgui.Checkbox(u8'РЎРїР°РІРЅРёС‚СЊ Р°РІС‚Рѕ', MRvanka.urvn.destroy) then
         --             settings.urvn.destroy = MRvanka.urvn.destroy[0]
         --             save()
         --         end
@@ -402,7 +402,7 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
         --                 save()
         --             end
         --             imgui.SameLine(280)
-        --             if imgui.Checkbox(u8'Спавнить авто', MRvanka.urvn.destroy) then
+        --             if imgui.Checkbox(u8'РЎРїР°РІРЅРёС‚СЊ Р°РІС‚Рѕ', MRvanka.urvn.destroy) then
         --                 settings.urvn.destroy = MRvanka.urvn.destroy[0]
         --                 save()
         --             end
@@ -410,12 +410,12 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
         --     end
         --     imgui.Spacing()
         --     imgui.SetCursorPosX(130)
-        --     if imgui.CustomSlider(u8'Дистанция к жертве', MRvanka.urvn.dist, true, 5, 59) then
+        --     if imgui.CustomSlider(u8'Р”РёСЃС‚Р°РЅС†РёСЏ Рє Р¶РµСЂС‚РІРµ', MRvanka.urvn.dist, true, 5, 59) then
         --         settings.urvn.dist = MRvanka.urvn.dist[0]
         --         save()
         --     end
         --     imgui.SetCursorPosX(130)
-        --     if imgui.CustomSlider(u8'Отнимать высоту', MRvanka.urvn.minusZ, false, 0, 1, '%0.2f') then
+        --     if imgui.CustomSlider(u8'РћС‚РЅРёРјР°С‚СЊ РІС‹СЃРѕС‚Сѓ', MRvanka.urvn.minusZ, false, 0, 1, '%0.2f') then
         --         settings.urvn.minusZ = MRvanka.urvn.minusZ[0]
         --         save()
         --     end
@@ -475,38 +475,38 @@ local menu = imgui.OnFrame(function() return renderWindow[0] end, function(playe
             end
             imgui.Spacing()
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Дистанция до авто', MRvanka.orvn.invisDist, false, 1, 65, '%0.2f') then
+            if imgui.CustomSlider(u8'Р”РёСЃС‚Р°РЅС†РёСЏ РґРѕ Р°РІС‚Рѕ', MRvanka.orvn.invisDist, false, 1, 65, '%0.2f') then
                 settings.vrvn.invisDist = MRvanka.orvn.invisDist[0]
                 save()
             end
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Количество пакетов', MRvanka.vrvn.invisPacket, true, 1, 100) then
+            if imgui.CustomSlider(u8'РљРѕР»РёС‡РµСЃС‚РІРѕ РїР°РєРµС‚РѕРІ', MRvanka.vrvn.invisPacket, true, 1, 100) then
                 settings.vrvn.invisPacket = MRvanka.vrvn.invisPacket[0]
                 save()
             end
             imgui.SetCursorPosX(130)
-            if imgui.CustomSlider(u8'Высота', MRvanka.orvn.invisZPos, true, -990, 1500) then
+            if imgui.CustomSlider(u8'Р’С‹СЃРѕС‚Р°', MRvanka.orvn.invisZPos, true, -990, 1500) then
                 settings.orvn.invisZPos = MRvanka.orvn.invisZPos[0]
                 save()
             end
         elseif tab == 4 then
             imgui.SetCursorPos(imgui.ImVec2(120, 40))
-            if imgui.Checkbox(u8'Отрисовка круга', MRvanka.settings.drawCircle) then
+            if imgui.Checkbox(u8'РћС‚СЂРёСЃРѕРІРєР° РєСЂСѓРіР°', MRvanka.settings.drawCircle) then
                 settings.settings.drawCircle = MRvanka.settings.drawCircle[0]
                 save()
             end
             imgui.SameLine(260)
-            if imgui.Checkbox(u8'Отрисовка линии', MRvanka.settings.drawLine) then
+            if imgui.Checkbox(u8'РћС‚СЂРёСЃРѕРІРєР° Р»РёРЅРёРё', MRvanka.settings.drawLine) then
                 settings.settings.drawLine = MRvanka.settings.drawLine[0]
                 save()
             end
             imgui.SetCursorPosX(120)
-            if imgui.Checkbox(u8'Двигать круг', MRvanka.settings.moveCircle) then
+            if imgui.Checkbox(u8'Р”РІРёРіР°С‚СЊ РєСЂСѓРі', MRvanka.settings.moveCircle) then
                 settings.settings.moveCircle = MRvanka.settings.moveCircle[0]
                 save()
             end
             -- imgui.SameLine(260)
-            -- if imgui.Checkbox(u8'Чекер смерти/кика', MRvanka.settings.checker) then
+            -- if imgui.Checkbox(u8'Р§РµРєРµСЂ СЃРјРµСЂС‚Рё/РєРёРєР°', MRvanka.settings.checker) then
             --     settings.settings.checker = MRvanka.settings.checker[0]
             --     save()
             -- end
@@ -768,14 +768,11 @@ local visual = imgui.OnFrame(function() return ((MRvanka.orvn.state or MRvanka.o
 )
 
 -- function sendTeleport(x, y, z, mx, my, mz)
---     local vector = require('vector3d')
 --     local packet = 0
 --     while getDistanceBetweenCoords3d(mx, my, mz, x, y, z) >= 10 do
---         local vector = vector(x - mx, y - my, z - mz)
---         vector:normalize()
---         mx = mx + vector.x * 3
---         my = my + vector.y * 3
---         mz = mz + vector.z * 3
+--         mx = mx + (x - mx / math.sqrt(x - mx*x - mx + y - my*y - my + z - mz*z - mz)) * 3
+--         my = my + (y - my / math.sqrt(x - mx*x - mx + y - my*y - my + z - mz*z - mz)) * 3
+--         mz = mz + (z - mz / math.sqrt(x - mx*x - mx + y - my*y - my + z - mz*z - mz)) * 3
 --         packet = packet + 1
 --         if isCharOnFoot(PLAYER_PED) then
 --             onfoot({mx, my, mz}, {0.7, 0.7, 1}, nil)
@@ -1035,16 +1032,16 @@ function keys()
 	return (not sampIsChatInputActive() and not sampIsDialogActive() and not sampIsCursorActive() and sampIsLocalPlayerSpawned())
 end
 
-function sampev.onSetPlayerPos(position)
+function se.onSetPlayerPos(position)
     if MRvanka.orvn.invisSurf[0] then
-        local mpos = vector(getCharCoordinates(PLAYER_PED))
-        if getDistanceBetweenCoords3d(mpos.x, mpos.y, mpos.z, position.x, position.y, position.z) < 25 then
+        local mx, my, mz = getCharCoordinates(PLAYER_PED)
+        if getDistanceBetweenCoords3d(mx, my, mz, position.x, position.y, position.z) < 25 then
             return false
         end
     end
 end
 
-function sampev.onApplyPlayerAnimation(playerId, animLib, animName, frameDelta, loop, lockX, lockY, freeze, time)
+function se.onApplyPlayerAnimation(playerId, animLib, animName, frameDelta, loop, lockX, lockY, freeze, time)
     if MRvanka.orvn.invisSurf[0] then
         local block = {"IDLE_CHAT", "crry_prtial", "phone_talk", "BOM_Plant", "getup"}
         for k, v in ipairs(block) do
@@ -1055,13 +1052,13 @@ function sampev.onApplyPlayerAnimation(playerId, animLib, animName, frameDelta, 
     end
 end
 
-function sampev.onSetVehicleAngle(vehicleId, angle)
+function se.onSetVehicleAngle(vehicleId, angle)
     if MRvanka.vrvn.state or MRvanka.vrvn.slapstate or MRvanka.vrvn.meteorstate then
         return false
     end
 end
 
-function sampev.onSendPlayerSync(data)
+function se.onSendPlayerSync(data)
     if MRvanka.orvn.state then
         if MRvanka.orvn.nop then
             return false
@@ -1080,11 +1077,15 @@ function sampev.onSendPlayerSync(data)
             data.surfingOffsets = {0, 0, -1}
             MRvanka.orvn.cid = id
             if getDistanceBetweenCoords3d(mx, my, mz, cx, cy, cz) > MRvanka.orvn.invisDist[0] then
-                local vector = vector(mx - cx, my - cy, mz - cz)
-                vector:normalize()
-                cx = cx + vector.x * 4
-                cy = cy + vector.y * 4
-                cz = cz + vector.z * 4
+                local dx = mx - cx
+                local dy = my - cy
+                local dz = mz - cz
+                local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+                if dist > 0 then
+                    cx = cx + (dx / dist) * 4
+                    cy = cy + (dy / dist) * 4
+                    cz = cz + (dz / dist) * 4
+                end
                 sendUnocInvis(cx, cy, cz, id)
                 setCarCoordinates(carHandle, cx, cy, cz+0.3)
             end
@@ -1095,7 +1096,7 @@ function sampev.onSendPlayerSync(data)
     end
 end
 
-function sampev.onSendVehicleSync(data)
+function se.onSendVehicleSync(data)
     if MRvanka.vrvn.state or MRvanka.vrvn.slapstate or MRvanka.vrvn.meteorstate then
         if MRvanka.vrvn.nop then
             return false
@@ -1117,7 +1118,7 @@ function sampev.onSendVehicleSync(data)
     end
 end
 
-function sampev.onPlayerSync(playerId, data)
+function se.onPlayerSync(playerId, data)
     if MRvanka.vrvn.state or MRvanka.vrvn.slapstate or MRvanka.vrvn.meteorstate then
         if data.surfingVehicleId == select(2, sampGetVehicleIdByCarHandle(getCarCharIsUsing(PLAYER_PED))) then
             if MRvanka.vrvn.rpos[0] then
@@ -1131,12 +1132,12 @@ function sampev.onPlayerSync(playerId, data)
     end
 end
 
-function sampev.onPlayerQuit(playerId, reason)
+function se.onPlayerQuit(playerId, reason)
     if (MRvanka.orvn.state or MRvanka.vrvn.state or MRvanka.orvn.slapstate or MRvanka.vrvn.slapstate or MRvanka.vrvn.meteorstate) and MRvanka.settings.checker[0] then
         for k, v in pairs(MRvanka.other.id) do
             if v == playerId and reason == 2 then
                 MRvanka.other.kicked = MRvanka.other.kicked + 1
-                msg("%s[%d] Успешно был кикнут. Кол-во кикнутых: %d", sampGetPlayerNickname(playerId), playerId, MRvanka.other.kicked)
+                msg("%s[%d] РЈСЃРїРµС€РЅРѕ Р±С‹Р» РєРёРєРЅСѓС‚. РљРѕР»-РІРѕ РєРёРєРЅСѓС‚С‹С…: %d", sampGetPlayerNickname(playerId), playerId, MRvanka.other.kicked)
                 table.remove(MRvanka.other.id, k)
                 break
             end
@@ -1144,11 +1145,11 @@ function sampev.onPlayerQuit(playerId, reason)
     end
 end
 
-function sampev.onPlayerDeath(playerId)
+function se.onPlayerDeath(playerId)
     if (MRvanka.orvn.state or MRvanka.vrvn.state or MRvanka.orvn.slapstate or MRvanka.vrvn.slapstate or MRvanka.vrvn.meteorstate) and MRvanka.settings.checker[0] then
         for k, v in pairs(MRvanka.other.id) do
             if v == playerId then
-                msg(sampGetPlayerNickname(playerId).."["..playerId.."] Умер.")
+                msg(sampGetPlayerNickname(playerId).."["..playerId.."] РЈРјРµСЂ.")
                 table.remove(MRvanka.other.id, k)
                 break
             end
@@ -1352,11 +1353,9 @@ end
 imgui.OnInitialize(function()
     imgui.GetIO().IniFilename = nil
     local config = imgui.ImFontConfig()
-    local iconRanges = imgui.new.ImWchar[3](faicons.min_range, faicons.max_range, 0)
     config.MergeMode = true
     config.PixelSnapH = true
-    font = imgui.GetIO().Fonts:AddFontFromFileTTF("moonloader/fonts/arialuni.ttf", 38)
-    imgui.GetIO().Fonts:AddFontFromMemoryCompressedBase85TTF(faicons.get_font_data_base85('solid'), 14, config, iconRanges)
+    font = imgui.GetIO().Fonts:AddFontFromFileTTF("fonts/arialuni.ttf", 38)
     theme()
 end)
 
