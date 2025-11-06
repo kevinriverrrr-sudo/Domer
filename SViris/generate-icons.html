@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Icon Generator for SViris</title>
+</head>
+<body>
+    <h1>Генератор иконок для SViris</h1>
+    <p>Эта страница генерирует иконки для расширения. Откройте её в браузере и нажмите кнопки ниже.</p>
+    
+    <canvas id="canvas16" width="16" height="16" style="border:1px solid #ccc; margin:10px;"></canvas>
+    <button onclick="download('icon16.png', 16)">Скачать 16x16</button>
+    <br>
+    
+    <canvas id="canvas48" width="48" height="48" style="border:1px solid #ccc; margin:10px;"></canvas>
+    <button onclick="download('icon48.png', 48)">Скачать 48x48</button>
+    <br>
+    
+    <canvas id="canvas128" width="128" height="128" style="border:1px solid #ccc; margin:10px;"></canvas>
+    <button onclick="download('icon128.png', 128)">Скачать 128x128</button>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const center = size / 2;
+            const radius = size * 0.45;
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(center, center, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Shield
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            const shieldTop = size * 0.2;
+            const shieldWidth = size * 0.4;
+            ctx.moveTo(center, shieldTop);
+            ctx.lineTo(center + shieldWidth * 0.6, shieldTop + size * 0.08);
+            ctx.lineTo(center + shieldWidth * 0.6, shieldTop + size * 0.35);
+            ctx.quadraticCurveTo(center + shieldWidth * 0.6, shieldTop + size * 0.55, center, shieldTop + size * 0.65);
+            ctx.quadraticCurveTo(center - shieldWidth * 0.6, shieldTop + size * 0.55, center - shieldWidth * 0.6, shieldTop + size * 0.35);
+            ctx.lineTo(center - shieldWidth * 0.6, shieldTop + size * 0.08);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Checkmark
+            if (size >= 48) {
+                ctx.strokeStyle = '#4CAF50';
+                ctx.lineWidth = size * 0.06;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(center - size * 0.1, center + size * 0.05);
+                ctx.lineTo(center - size * 0.02, center + size * 0.13);
+                ctx.lineTo(center + size * 0.15, center - size * 0.08);
+                ctx.stroke();
+            } else {
+                // Simplified checkmark for small sizes
+                ctx.strokeStyle = '#4CAF50';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(center - 3, center + 1);
+                ctx.lineTo(center, center + 4);
+                ctx.lineTo(center + 5, center - 3);
+                ctx.stroke();
+            }
+        }
+        
+        function download(filename, size) {
+            const canvas = document.getElementById('canvas' + size);
+            const url = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        }
+        
+        // Draw icons on page load
+        window.onload = function() {
+            drawIcon(document.getElementById('canvas16'), 16);
+            drawIcon(document.getElementById('canvas48'), 48);
+            drawIcon(document.getElementById('canvas128'), 128);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SViris Security Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="14" fill="#4CAF50"/>
+          <path d="M16 8 L20 16 L16 24 L12 16 Z" fill="white"/>
+        </svg>
+        <h1>SViris</h1>
+      </div>
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Активен</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="file-scan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+        </svg>
+        Файлы
+      </button>
+      <button class="tab-button" data-tab="url-scan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+        </svg>
+        Ссылки
+      </button>
+      <button class="tab-button" data-tab="behavior">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/>
+        </svg>
+        Поведение
+      </button>
+      <button class="tab-button" data-tab="history">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+        </svg>
+        История
+      </button>
+    </div>
+
+    <div class="tab-content active" id="file-scan">
+      <div class="scan-section">
+        <h2>Проверка файлов</h2>
+        <p class="description">Загрузите файл для проверки на вирусы и вредоносное ПО</p>
+        
+        <div class="upload-area" id="uploadArea">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+          </svg>
+          <p>Перетащите файл сюда или</p>
+          <button class="btn btn-primary" id="selectFileBtn">Выберите файл</button>
+          <input type="file" id="fileInput" style="display: none;">
+          <p class="hint">Максимальный размер: 32 МБ</p>
+        </div>
+
+        <div class="scan-result hidden" id="fileScanResult">
+          <div class="result-header">
+            <h3>Результат проверки</h3>
+            <button class="btn btn-small" id="newFileScan">Новая проверка</button>
+          </div>
+          <div class="result-content" id="fileResultContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="url-scan">
+      <div class="scan-section">
+        <h2>Проверка ссылок</h2>
+        <p class="description">Введите URL для проверки на фишинг и вредоносное содержимое</p>
+        
+        <div class="url-input-group">
+          <input type="text" id="urlInput" placeholder="https://example.com" class="input">
+          <button class="btn btn-primary" id="scanUrlBtn">Проверить</button>
+        </div>
+        
+        <button class="btn btn-secondary" id="scanCurrentPageBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          Проверить текущую страницу
+        </button>
+
+        <div class="scan-result hidden" id="urlScanResult">
+          <div class="result-header">
+            <h3>Результат проверки</h3>
+          </div>
+          <div class="result-content" id="urlResultContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="behavior">
+      <div class="scan-section">
+        <h2>Мониторинг поведения</h2>
+        <p class="description">Отслеживание подозрительной активности на веб-страницах</p>
+        
+        <div class="toggle-section">
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="monitorScripts" checked>
+              <span>Отслеживать выполнение скриптов</span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="monitorNetwork" checked>
+              <span>Мониторить сетевые запросы</span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="monitorCookies" checked>
+              <span>Отслеживать изменения cookies</span>
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="monitorDownloads" checked>
+              <span>Контролировать загрузки</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="behavior-stats" id="behaviorStats">
+          <div class="stat-card">
+            <div class="stat-value" id="scriptCount">0</div>
+            <div class="stat-label">Скриптов выполнено</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="requestCount">0</div>
+            <div class="stat-label">Сетевых запросов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="warningCount">0</div>
+            <div class="stat-label">Предупреждений</div>
+          </div>
+        </div>
+
+        <div class="activity-log" id="activityLog">
+          <h3>Журнал активности</h3>
+          <div class="log-entries" id="logEntries">
+            <p class="empty-state">Нет записей</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="history">
+      <div class="scan-section">
+        <h2>История проверок</h2>
+        <p class="description">Просмотр всех предыдущих сканирований</p>
+        
+        <div class="history-filters">
+          <button class="filter-btn active" data-filter="all">Все</button>
+          <button class="filter-btn" data-filter="files">Файлы</button>
+          <button class="filter-btn" data-filter="urls">Ссылки</button>
+          <button class="filter-btn" data-filter="threats">Угрозы</button>
+        </div>
+
+        <div class="history-list" id="historyList">
+          <p class="empty-state">История пуста</p>
+        </div>
+
+        <button class="btn btn-secondary" id="clearHistoryBtn">Очистить историю</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
