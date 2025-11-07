@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_run"
+        android:title="Запустить"
+        android:icon="@android:drawable/ic_media_play"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_format"
+        android:title="Форматировать"
+        android:icon="@android:drawable/ic_menu_edit"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:title="Настройки"
+        android:icon="@android:drawable/ic_menu_preferences"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_about"
+        android:title="О приложении"
+        android:icon="@android:drawable/ic_menu_info_details"
+        app:showAsAction="never" />
+
+</menu>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:title="@string/pref_appearance">
+
+        <SwitchPreferenceCompat
+            android:key="dark_theme"
+            android:title="@string/pref_dark_theme"
+            android:summary="@string/pref_dark_theme_summary"
+            android:defaultValue="true" />
+
+        <ListPreference
+            android:key="font_size"
+            android:title="@string/pref_font_size"
+            android:summary="@string/pref_font_size_summary"
+            android:entries="@array/font_sizes"
+            android:entryValues="@array/font_size_values"
+            android:defaultValue="14" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_editor">
+
+        <SwitchPreferenceCompat
+            android:key="auto_save"
+            android:title="@string/pref_auto_save"
+            android:summary="@string/pref_auto_save_summary"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="line_numbers"
+            android:title="@string/pref_line_numbers"
+            android:summary="@string/pref_line_numbers_summary"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_about">
+
+        <Preference
+            android:key="version"
+            android:title="@string/pref_version"
+            android:summary="@string/version_name"
+            android:selectable="false" />
+
+        <Preference
+            android:key="author"
+            android:title="@string/pref_author"
+            android:summary="@string/author_name"
+            android:selectable="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
