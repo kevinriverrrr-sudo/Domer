@@ -538,53 +538,145 @@ def extract_code_blocks(text):
     return unique_blocks
 
 
+def get_smart_filename(code, lang, index, total, project_name):
+    """Умное определение имени файла на основе содержимого"""
+    code_lower = code.lower()
+    
+    # Определяем расширение файла
+    extensions = {
+        'python': '.py',
+        'py': '.py',
+        'javascript': '.js',
+        'js': '.js',
+        'typescript': '.ts',
+        'ts': '.ts',
+        'html': '.html',
+        'css': '.css',
+        'java': '.java',
+        'cpp': '.cpp',
+        'c': '.c',
+        'go': '.go',
+        'rust': '.rs',
+        'php': '.php',
+        'ruby': '.rb',
+        'swift': '.swift',
+        'kotlin': '.kt',
+        'sql': '.sql',
+        'json': '.json',
+        'xml': '.xml',
+        'yaml': '.yml',
+        'yml': '.yml',
+        'sh': '.sh',
+        'bash': '.sh',
+        'txt': '.txt'
+    }
+    
+    ext = extensions.get(lang.lower(), '.txt')
+    
+    # Пытаемся определить имя файла из кода
+    filename = None
+    
+    # Для Python
+    if lang.lower() in ['python', 'py']:
+        if 'if __name__' in code or 'def main' in code:
+            filename = 'main.py'
+        elif 'class' in code_lower and 'def __init__' in code_lower:
+            # Пытаемся найти имя класса
+            class_match = re.search(r'class\s+(\w+)', code)
+            if class_match:
+                filename = f"{class_match.group(1).lower()}.py"
+        elif 'def' in code_lower:
+            func_match = re.search(r'def\s+(\w+)', code)
+            if func_match:
+                func_name = func_match.group(1)
+                if func_name not in ['main', '__init__', '__str__']:
+                    filename = f"{func_name}.py"
+    
+    # Для JavaScript/TypeScript
+    elif lang.lower() in ['javascript', 'js', 'typescript', 'ts']:
+        if 'module.exports' in code or 'export default' in code:
+            filename = f"{project_name}{ext}"
+        elif 'function' in code_lower or 'const' in code_lower:
+            func_match = re.search(r'(?:function|const)\s+(\w+)', code)
+            if func_match:
+                filename = f"{func_match.group(1)}{ext}"
+    
+    # Для HTML
+    elif lang.lower() == 'html':
+        if '<html' in code_lower or '<!doctype' in code_lower:
+            filename = 'index.html'
+        else:
+            filename = f"{project_name}.html"
+    
+    # Для CSS
+    elif lang.lower() == 'css':
+        filename = 'style.css'
+    
+    # Для других языков - используем стандартные имена
+    else:
+        if lang.lower() == 'java':
+            class_match = re.search(r'class\s+(\w+)', code)
+            if class_match:
+                filename = f"{class_match.group(1)}{ext}"
+        elif lang.lower() in ['cpp', 'c']:
+            if 'int main' in code_lower:
+                filename = 'main.cpp' if lang.lower() == 'cpp' else 'main.c'
+    
+    # Если не удалось определить умное имя, используем стандартное
+    if not filename:
+        if total == 1:
+            filename = f"main{ext}"
+        else:
+            # Стандартные имена для разных типов файлов
+            standard_names = {
+                '.py': ['main.py', 'app.py', 'script.py'],
+                '.js': ['app.js', 'index.js', 'main.js'],
+                '.ts': ['app.ts', 'index.ts', 'main.ts'],
+                '.html': ['index.html', 'app.html'],
+                '.css': ['style.css', 'main.css'],
+                '.json': ['config.json', 'data.json'],
+            }
+            
+            names_list = standard_names.get(ext, [f'file{ext}'])
+            filename = names_list[min(index, len(names_list) - 1)]
+    
+    return filename
+
+
 def create_project_archive(code_blocks, project_name="project"):
     """Создание ZIP архива с проектом"""
     temp_dir = tempfile.mkdtemp()
     zip_path = os.path.join(temp_dir, f"{project_name}.zip")
     
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Всегда добавляем файл XGPT.txt
+        xgpt_info = "Было создано XGPT"
+        zipf.writestr("XGPT.txt", xgpt_info)
+        
+        # Добавляем README если несколько файлов
+        if len(code_blocks) > 1:
+            readme = f"# {project_name}\n\nПроект создан с помощью XGPT\n\n"
+            zipf.writestr("README.md", readme)
+        
+        # Добавляем файлы с умными именами
+        used_filenames = set(['XGPT.txt', 'README.md'])  # Избегаем дубликатов
+        
         for i, block in enumerate(code_blocks):
             lang = block['language']
             code = block['code']
             
-            # Определяем расширение файла
-            extensions = {
-                'python': '.py',
-                'py': '.py',
-                'javascript': '.js',
-                'js': '.js',
-                'typescript': '.ts',
-                'ts': '.ts',
-                'html': '.html',
-                'css': '.css',
-                'java': '.java',
-                'cpp': '.cpp',
-                'c': '.c',
-                'go': '.go',
-                'rust': '.rs',
-                'php': '.php',
-                'ruby': '.rb',
-                'swift': '.swift',
-                'kotlin': '.kt',
-                'sql': '.sql',
-                'json': '.json',
-                'xml': '.xml',
-                'yaml': '.yml',
-                'yml': '.yml',
-                'sh': '.sh',
-                'bash': '.sh',
-                'txt': '.txt'
-            }
+            # Получаем умное имя файла
+            filename = get_smart_filename(code, lang, i, len(code_blocks), project_name)
             
-            ext = extensions.get(lang.lower(), '.txt')
-            filename = f"file_{i+1}{ext}" if len(code_blocks) > 1 else f"main{ext}"
+            # Если имя уже используется, добавляем номер
+            original_filename = filename
+            counter = 1
+            while filename in used_filenames:
+                name, ext = os.path.splitext(original_filename)
+                filename = f"{name}_{counter}{ext}"
+                counter += 1
             
-            # Добавляем README если несколько файлов
-            if len(code_blocks) > 1 and i == 0:
-                readme = f"# {project_name}\n\nПроект создан с помощью XGPT\n\n"
-                zipf.writestr("README.md", readme)
-            
+            used_filenames.add(filename)
             zipf.writestr(filename, code)
     
     return zip_path
