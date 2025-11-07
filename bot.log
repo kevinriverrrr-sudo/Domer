@@ -1,0 +1,7 @@
+2025-11-07 06:08:39,190 - __main__ - INFO - 🚀 Запуск XGPT - AI-помощник для программирования...
+2025-11-07 06:08:39,520 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getMe "HTTP/1.1 200 OK"
+2025-11-07 06:08:39,618 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/deleteWebhook "HTTP/1.1 200 OK"
+2025-11-07 06:08:39,618 - telegram.ext.Application - INFO - Application started
+2025-11-07 06:08:42,876 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/getUpdates "HTTP/1.1 200 OK"
+2025-11-07 06:08:42,993 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/sendMessage "HTTP/1.1 200 OK"
+2025-11-07 06:08:44,267 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot7560458678:AAHbtiK7z0QiII5Iz3fzo17cReOaDS-2tBU/editMessageText "HTTP/1.1 200 OK"
