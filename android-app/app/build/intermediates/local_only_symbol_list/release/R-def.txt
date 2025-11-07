@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+id inputMessage
+id responseText
+id sendButton
+id statusText
+id titleText
+layout activity_main
+string app_name
+string gemini_response
+string hint_message
+string send_button
+string telegram_status
