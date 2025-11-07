@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MoonCode</string>
+    <string name="settings">Настройки</string>
+    <string name="about">О приложении</string>
+    <string name="save">Сохранить</string>
+    <string name="compile">Скомпилировать</string>
+    <string name="open">Открыть</string>
+    <string name="new_file">Новый файл</string>
+    <string name="run">Запустить</string>
+    <string name="format">Форматировать</string>
+    
+    <!-- Settings -->
+    <string name="pref_appearance">Внешний вид</string>
+    <string name="pref_dark_theme">Темная тема</string>
+    <string name="pref_dark_theme_summary">Использовать темную тему</string>
+    <string name="pref_font_size">Размер шрифта</string>
+    <string name="pref_font_size_summary">Выберите размер шрифта редактора</string>
+    
+    <string name="pref_editor">Редактор</string>
+    <string name="pref_auto_save">Автосохранение</string>
+    <string name="pref_auto_save_summary">Автоматически сохранять при выходе</string>
+    <string name="pref_line_numbers">Номера строк</string>
+    <string name="pref_line_numbers_summary">Показывать номера строк</string>
+    
+    <string name="pref_about">О программе</string>
+    <string name="pref_version">Версия</string>
+    <string name="pref_author">Автор</string>
+    <string name="author_name">\@MarkusGarantor</string>
+    <string name="version_name">1.0</string>
+</resources>

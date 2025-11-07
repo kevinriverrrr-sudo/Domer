@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="font_size_values">
+        <item>12</item>
+        <item>14</item>
+        <item>16</item>
+        <item>18</item>
+    </string-array>
+    <string-array name="font_sizes">
+        <item>Маленький</item>
+        <item>Средний</item>
+        <item>Большой</item>
+        <item>Очень большой</item>
+    </string-array>
+    <color name="black">#000000</color>
+    <color name="dark_background">#252526</color>
+    <color name="dark_primary">#1E1E1E</color>
+    <color name="dark_primary_variant">#2D2D30</color>
+    <color name="dark_secondary">#3E3E42</color>
+    <color name="dark_surface">#1E1E1E</color>
+    <color name="light_background">#FFFFFF</color>
+    <color name="light_primary">#2196F3</color>
+    <color name="light_primary_variant">#1976D2</color>
+    <color name="light_secondary">#03DAC5</color>
+    <color name="light_surface">#F5F5F5</color>
+    <color name="moon_blue">#4FC3F7</color>
+    <color name="moon_purple">#AB47BC</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFF</color>
+    <string name="about">О приложении</string>
+    <string name="app_name">MoonCode</string>
+    <string name="author_name">\@MarkusGarantor</string>
+    <string name="compile">Скомпилировать</string>
+    <string name="format">Форматировать</string>
+    <string name="new_file">Новый файл</string>
+    <string name="open">Открыть</string>
+    <string name="pref_about">О программе</string>
+    <string name="pref_appearance">Внешний вид</string>
+    <string name="pref_author">Автор</string>
+    <string name="pref_auto_save">Автосохранение</string>
+    <string name="pref_auto_save_summary">Автоматически сохранять при выходе</string>
+    <string name="pref_dark_theme">Темная тема</string>
+    <string name="pref_dark_theme_summary">Использовать темную тему</string>
+    <string name="pref_editor">Редактор</string>
+    <string name="pref_font_size">Размер шрифта</string>
+    <string name="pref_font_size_summary">Выберите размер шрифта редактора</string>
+    <string name="pref_line_numbers">Номера строк</string>
+    <string name="pref_line_numbers_summary">Показывать номера строк</string>
+    <string name="pref_version">Версия</string>
+    <string name="run">Запустить</string>
+    <string name="save">Сохранить</string>
+    <string name="settings">Настройки</string>
+    <string name="version_name">1.0</string>
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar">
+        <item name="colorPrimary">@color/light_primary</item>
+        <item name="colorPrimaryVariant">@color/light_primary_variant</item>
+        <item name="colorSecondary">@color/light_secondary</item>
+        <item name="colorSurface">@color/light_surface</item>
+        <item name="android:colorBackground">@color/light_background</item>
+        <item name="android:statusBarColor">@color/light_primary_variant</item>
+    </style>
+</resources>

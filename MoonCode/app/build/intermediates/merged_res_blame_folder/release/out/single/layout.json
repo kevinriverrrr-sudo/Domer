@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.markusgarantor.mooncode.app-mergeReleaseResources-38:/layout/activity_about.xml",
+        "source": "com.markusgarantor.mooncode.app-main-40:/layout/activity_about.xml"
+    },
+    {
+        "merged": "com.markusgarantor.mooncode.app-mergeReleaseResources-38:/layout/file_item.xml",
+        "source": "com.markusgarantor.mooncode.app-main-40:/layout/file_item.xml"
+    },
+    {
+        "merged": "com.markusgarantor.mooncode.app-mergeReleaseResources-38:/layout/activity_file_manager.xml",
+        "source": "com.markusgarantor.mooncode.app-main-40:/layout/activity_file_manager.xml"
+    },
+    {
+        "merged": "com.markusgarantor.mooncode.app-mergeReleaseResources-38:/layout/activity_main.xml",
+        "source": "com.markusgarantor.mooncode.app-main-40:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.markusgarantor.mooncode.app-mergeReleaseResources-38:/layout/activity_settings.xml",
+        "source": "com.markusgarantor.mooncode.app-main-40:/layout/activity_settings.xml"
+    }
+]
