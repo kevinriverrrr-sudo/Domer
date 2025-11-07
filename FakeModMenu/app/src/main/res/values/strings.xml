@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mod Menu</string>
+    <string name="launch_button">Запустить</string>
+    <string name="stop_button">Остановить</string>
+    <string name="permission_required">Требуется разрешение на отображение поверх других приложений</string>
+    <string name="tab_visuals">Visuals</string>
+    <string name="tab_aimbot">AimBot</string>
+    <string name="tab_misc">Misc</string>
+    <string name="tab_player">Player</string>
+    <string name="tab_settings">Settings</string>
+</resources>
