@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gemini Telegram Bot</string>
+    <string name="gemini_response">Gemini Response:</string>
+    <string name="hint_message">Enter your message...</string>
+    <string name="send_button">Send</string>
+    <string name="telegram_status">Telegram Bot Status</string>
+</resources>
