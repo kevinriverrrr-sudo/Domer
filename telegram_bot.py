@@ -12,6 +12,8 @@ import os
 import re
 import zipfile
 import tempfile
+import time
+import asyncio
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
@@ -588,6 +590,41 @@ def create_project_archive(code_blocks, project_name="project"):
     return zip_path
 
 
+async def generate_with_retry(prompt, max_retries=3):
+    """Генерация ответа с повторными попытками при ошибках"""
+    for attempt in range(max_retries):
+        try:
+            # Небольшая задержка перед запросом для снижения нагрузки
+            if attempt > 0:
+                await asyncio.sleep(1)
+            
+            response = model.generate_content(prompt)
+            return response
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Ошибка 429 - слишком много запросов
+            if "429" in error_str or "resource exhausted" in error_str or "quota" in error_str:
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 3  # Увеличиваем задержку: 3, 6, 9 секунд
+                    logger.warning(f"Rate limit hit (429), waiting {wait_time} seconds before retry {attempt + 1}/{max_retries}")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    raise Exception("Превышен лимит запросов к API. Пожалуйста, подожди немного и попробуй снова через 1-2 минуты.")
+            
+            # Другие ошибки - пробуем еще раз с задержкой
+            elif attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2
+                logger.warning(f"Error occurred, retrying in {wait_time} seconds: {e}")
+                await asyncio.sleep(wait_time)
+                continue
+            else:
+                raise
+    
+    raise Exception("Не удалось получить ответ после нескольких попыток")
+
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик текстовых сообщений"""
     user_id = update.effective_user.id
@@ -609,12 +646,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Отправляем сообщение о том, что бот думает
     thinking_message = await update.message.reply_text("🚀 XGPT думает...")
     
+    request_used = False
     try:
         # Формируем промпт с системным контекстом
         full_prompt = f"{XGPT_SYSTEM_PROMPT}\n\nЗапрос пользователя: {user_message}\n\nОтветь в стиле XGPT:"
         
-        # Получаем ответ от Gemini AI
-        response = model.generate_content(full_prompt)
+        # Получаем ответ от Gemini AI с повторными попытками
+        response = await generate_with_retry(full_prompt)
         
         # Получаем текст ответа
         response_text = response.text if hasattr(response, 'text') else str(response)
@@ -623,8 +661,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if "XGPT" not in response_text:
             response_text = f"✨ {response_text}\n\n— XGPT"
         
-        # Используем запрос
+        # Используем запрос только если успешно получили ответ
         use_request(user_id)
+        request_used = True
         
         # Добавляем в историю
         add_to_history(user_id, user_message, response_text)
@@ -686,12 +725,51 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
     except Exception as e:
         logger.error(f"Ошибка при обращении к Gemini AI: {e}")
-        await thinking_message.edit_text(
-            f"❌ Упс! Произошла ошибка, но XGPT не сдается!\n"
-            f"Ошибка: {str(e)}\n\n"
-            f"Попробуй еще раз или используй команду /help\n\n"
-            f"✨ XGPT всегда готов помочь!"
-        )
+        error_message = str(e)
+        
+        # Специальная обработка ошибки 429
+        if "429" in error_message or "resource exhausted" in error_message.lower() or "quota" in error_message.lower() or "лимит" in error_message.lower():
+            # При ошибке 429 не списываем запрос
+            if not request_used:
+                error_text = (
+                    f"⏳ Упс! Превышен лимит запросов к API.\n\n"
+                    f"💡 XGPT обрабатывает много запросов прямо сейчас.\n"
+                    f"⏰ Подожди 1-2 минуты и попробуй снова.\n\n"
+                    f"✅ Твой запрос не был использован - можешь попробовать еще раз!\n\n"
+                    f"✨ XGPT всегда готов помочь, просто нужно немного подождать!"
+                )
+            else:
+                error_text = (
+                    f"⏳ Упс! Превышен лимит запросов к API.\n\n"
+                    f"💡 XGPT обрабатывает много запросов прямо сейчас.\n"
+                    f"⏰ Подожди 1-2 минуты и попробуй снова.\n\n"
+                    f"✨ XGPT всегда готов помочь, просто нужно немного подождать!"
+                )
+        else:
+            # При других ошибках также не списываем запрос, если он не был использован
+            if not request_used:
+                error_text = (
+                    f"❌ Упс! Произошла ошибка, но XGPT не сдается!\n\n"
+                    f"Ошибка: {error_message[:200]}\n\n"
+                    f"💡 Попробуй:\n"
+                    f"• Переформулировать запрос\n"
+                    f"• Подождать немного и попробовать снова\n"
+                    f"• Использовать команду /help\n\n"
+                    f"✅ Твой запрос не был использован - можешь попробовать еще раз!\n\n"
+                    f"✨ XGPT всегда готов помочь!"
+                )
+            else:
+                error_text = (
+                    f"❌ Упс! Произошла ошибка, но XGPT не сдается!\n\n"
+                    f"Ошибка: {error_message[:200]}\n\n"
+                    f"💡 Попробуй:\n"
+                    f"• Переформулировать запрос\n"
+                    f"• Подождать немного и попробовать снова\n"
+                    f"• Использовать команду /help\n\n"
+                    f"✨ XGPT всегда готов помочь!"
+                )
+        
+        await thinking_message.edit_text(error_text)
 
 
 def main() -> None:
