@@ -763,14 +763,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Проверяем, есть ли код в ответе
         code_blocks = extract_code_blocks(response_text)
         
-        # Отправляем текстовый ответ
+        # Отправляем текстовый ответ с обработкой ошибок парсинга
         if len(response_text) > 4096:
             chunks = [response_text[i:i+4096] for i in range(0, len(response_text), 4096)]
-            await thinking_message.edit_text(chunks[0], parse_mode='Markdown')
+            try:
+                await thinking_message.edit_text(chunks[0], parse_mode='Markdown')
+            except Exception as parse_error:
+                # Если ошибка парсинга, отправляем без форматирования
+                logger.warning(f"Markdown parse error, sending as plain text: {parse_error}")
+                await thinking_message.edit_text(chunks[0])
+            
             for chunk in chunks[1:]:
-                await update.message.reply_text(chunk, parse_mode='Markdown')
+                try:
+                    await update.message.reply_text(chunk, parse_mode='Markdown')
+                except Exception:
+                    await update.message.reply_text(chunk)
         else:
-            await thinking_message.edit_text(response_text, parse_mode='Markdown')
+            try:
+                await thinking_message.edit_text(response_text, parse_mode='Markdown')
+            except Exception as parse_error:
+                # Если ошибка парсинга, отправляем без форматирования
+                logger.warning(f"Markdown parse error, sending as plain text: {parse_error}")
+                await thinking_message.edit_text(response_text)
         
         # Если есть код, создаем архив
         if code_blocks:
