@@ -34,8 +34,6 @@ function main()
 		wait(100) 
 	end
 	
-	wait(500)
-	
 	sampRegisterChatCommand('bph', function()
 		if #quests > 0 then
 			main_window_state.v = not main_window_state.v
@@ -44,8 +42,6 @@ function main()
 			sampAddChatMessage("{32CD32}[BP Helper] {FFFFFF}Для работы скрипта откройте {32CD32}Боевой Пропуск{FFFFFF}!", -1)
 		end
 	end)
-	
-	sampAddChatMessage("{32CD32}[BP Helper] {FFFFFF}Скрипт загружен! Используйте команду {32CD32}/bph", -1)
 	
 	while true do
 		wait(0)
