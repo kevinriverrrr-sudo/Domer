@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Telegram бот с интеграцией Gemini AI
-Расширенная версия с лимитами, профилем, реферальной системой и кнопками
+XGPT - Telegram бот для программирования
+AI-помощник с интеграцией Gemini AI для создания кода и приложений
+Включает лимиты, профиль, реферальную систему, создание архивов с кодом
 """
 
 import logging
 import json
 import os
+import re
+import zipfile
+import tempfile
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
@@ -27,9 +31,28 @@ DAILY_LIMIT = 50  # Лимит запросов в день
 REFERRAL_BONUS = 10  # Бонус за приглашение
 BOSS_USER_IDS = []  # ID пользователей с правами босса (можно добавить через переменную окружения)
 
-# Настройка Gemini AI
+# Настройка Gemini AI для кодинга
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+# Используем экспериментальную модель для лучшего кодинга
+model = genai.GenerativeModel('gemini-2.0-flash-exp')
+
+# Системный промпт для XGPT
+XGPT_SYSTEM_PROMPT = """Ты XGPT - крутой AI-ассистент для программирования и создания приложений! 
+
+Твой стиль общения:
+- Используй эмодзи для выразительности 🚀💻✨
+- Будь дружелюбным, но профессиональным
+- Всегда упоминай "XGPT" в начале или конце ответов
+- Когда пишешь код, делай его чистым, комментированным и готовым к использованию
+- Если пользователь просит создать приложение/код, структурируй ответ так, чтобы можно было легко создать файлы
+
+Формат для кода:
+- Используй markdown с блоками кода
+- Указывай язык программирования
+- Добавляй комментарии
+- Предлагай структуру проекта если нужно
+
+Помни: ты XGPT - лучший помощник для разработчиков! 🎯"""
 
 # Файл для хранения данных
 DATA_FILE = "users_data.json"
@@ -185,10 +208,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reset_daily_limits()
     
     welcome_text = (
-        f"👋 Привет, {username}!\n\n"
-        f"🤖 Я бот с интеграцией Gemini AI.\n"
+        f"🚀 Привет, {username}!\n\n"
+        f"✨ Я XGPT - твой AI-помощник для программирования!\n"
+        f"💻 Создаю код, приложения и помогаю с разработкой\n\n"
         f"📊 У тебя доступно запросов: {get_available_requests(user_id)}\n\n"
-        f"💡 Просто отправь мне сообщение, и я отвечу!\n"
+        f"💡 Просто опиши что нужно создать, и я помогу!\n"
+        f"📦 Если нужен код - я создам архив с проектом!\n"
         f"📱 Используй кнопки ниже для управления."
     )
     
@@ -201,8 +226,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /help"""
     help_text = (
-        "📚 Помощь по использованию бота:\n\n"
-        "🔹 Отправь мне любое сообщение, и я отвечу с помощью Gemini AI\n"
+        "📚 Помощь по использованию XGPT:\n\n"
+        "✨ XGPT - твой AI-помощник для программирования!\n\n"
+        "🔹 Просто опиши что нужно создать - приложение, скрипт, сайт\n"
+        "🔹 Я создам код и отправлю архив с проектом\n"
         "🔹 У тебя есть лимит 50 запросов в день\n"
         "🔹 За каждого приглашенного друга получаешь +10 запросов\n"
         "🔹 Используй кнопки меню для навигации\n\n"
@@ -212,8 +239,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/profile - Профиль пользователя\n"
         "/referral - Реферальная ссылка\n"
         "/stats - Статистика\n"
-        "/history - История запросов\n\n"
-        "💡 Совет: Поделись своей реферальной ссылкой с друзьями!"
+        "/history - История запросов\n"
+        "/boss - Добавить запросы\n\n"
+        "💡 Примеры запросов:\n"
+        "• 'Создай калькулятор на Python'\n"
+        "• 'Сделай веб-сайт с формой'\n"
+        "• 'Напиши Telegram бота'\n\n"
+        "🎯 XGPT всегда готов помочь!"
     )
     
     await update.message.reply_text(help_text, reply_markup=get_main_keyboard())
@@ -270,7 +302,7 @@ async def boss_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(
             f"✅ Добавлено {amount} запросов!\n"
             f"📊 Теперь у тебя доступно: {get_available_requests(user_id)} запросов\n\n"
-            f"🎉 Наслаждайся использованием бота!"
+            f"🎉 Наслаждайся использованием XGPT!"
         )
     except ValueError:
         await update.message.reply_text("❌ Неверный формат. Используй: /boss <число>")
@@ -408,7 +440,8 @@ async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"🔹 История запросов: последние 50\n"
         f"🔹 Твои бонусные запросы: {user_data.get('bonus_requests', 0)}\n\n"
         "💡 Используй реферальную систему для получения дополнительных запросов!\n"
-        "🔐 Используй команду /boss для добавления запросов!"
+        "🔐 Используй команду /boss для добавления запросов!\n\n"
+        "✨ XGPT - твой лучший помощник!"
     )
     
     keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data="back_to_menu")]]
@@ -458,11 +491,101 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         available = get_available_requests(user_id)
         
         menu_text = (
-            f"📱 Главное меню\n\n"
+            f"📱 Главное меню XGPT\n\n"
             f"📊 Доступно запросов: {available}\n\n"
-            f"Выбери действие:"
+            f"✨ Выбери действие:"
         )
         await query.edit_message_text(menu_text, reply_markup=get_main_keyboard())
+
+
+def extract_code_blocks(text):
+    """Извлечение блоков кода из текста"""
+    code_blocks = []
+    # Ищем блоки кода в markdown формате (с поддержкой разных вариантов)
+    patterns = [
+        r'```(\w+)?\n(.*?)```',  # Стандартный формат
+        r'```(\w+)\s*\n(.*?)```',  # С пробелами
+        r'```\s*(\w+)?\s*\n(.*?)```',  # С пробелами вокруг языка
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, text, re.DOTALL)
+        for match in matches:
+            if len(match) == 2:
+                lang, code = match
+            else:
+                lang = match[0] if match else None
+                code = match[1] if len(match) > 1 else match[0]
+            
+            code = code.strip() if isinstance(code, str) else str(code).strip()
+            if code and len(code) > 10:  # Минимальная длина кода
+                code_blocks.append({
+                    'language': (lang or 'txt').strip(),
+                    'code': code
+                })
+    
+    # Удаляем дубликаты
+    seen = set()
+    unique_blocks = []
+    for block in code_blocks:
+        code_hash = hash(block['code'])
+        if code_hash not in seen:
+            seen.add(code_hash)
+            unique_blocks.append(block)
+    
+    return unique_blocks
+
+
+def create_project_archive(code_blocks, project_name="project"):
+    """Создание ZIP архива с проектом"""
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, f"{project_name}.zip")
+    
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for i, block in enumerate(code_blocks):
+            lang = block['language']
+            code = block['code']
+            
+            # Определяем расширение файла
+            extensions = {
+                'python': '.py',
+                'py': '.py',
+                'javascript': '.js',
+                'js': '.js',
+                'typescript': '.ts',
+                'ts': '.ts',
+                'html': '.html',
+                'css': '.css',
+                'java': '.java',
+                'cpp': '.cpp',
+                'c': '.c',
+                'go': '.go',
+                'rust': '.rs',
+                'php': '.php',
+                'ruby': '.rb',
+                'swift': '.swift',
+                'kotlin': '.kt',
+                'sql': '.sql',
+                'json': '.json',
+                'xml': '.xml',
+                'yaml': '.yml',
+                'yml': '.yml',
+                'sh': '.sh',
+                'bash': '.sh',
+                'txt': '.txt'
+            }
+            
+            ext = extensions.get(lang.lower(), '.txt')
+            filename = f"file_{i+1}{ext}" if len(code_blocks) > 1 else f"main{ext}"
+            
+            # Добавляем README если несколько файлов
+            if len(code_blocks) > 1 and i == 0:
+                readme = f"# {project_name}\n\nПроект создан с помощью XGPT\n\n"
+                zipf.writestr("README.md", readme)
+            
+            zipf.writestr(filename, code)
+    
+    return zip_path
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -477,20 +600,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             f"❌ Достигнут дневной лимит запросов!\n\n"
             f"📊 Доступно запросов: {available}\n"
             f"💡 Пригласи друзей, чтобы получить дополнительные запросы!\n"
-            f"📱 Используй /referral для получения реферальной ссылки.",
+            f"📱 Используй /referral для получения реферальной ссылки.\n\n"
+            f"✨ XGPT всегда готов помочь!",
             reply_markup=get_main_keyboard()
         )
         return
     
     # Отправляем сообщение о том, что бот думает
-    thinking_message = await update.message.reply_text("🤔 Думаю...")
+    thinking_message = await update.message.reply_text("🚀 XGPT думает...")
     
     try:
+        # Формируем промпт с системным контекстом
+        full_prompt = f"{XGPT_SYSTEM_PROMPT}\n\nЗапрос пользователя: {user_message}\n\nОтветь в стиле XGPT:"
+        
         # Получаем ответ от Gemini AI
-        response = model.generate_content(user_message)
+        response = model.generate_content(full_prompt)
         
         # Получаем текст ответа
         response_text = response.text if hasattr(response, 'text') else str(response)
+        
+        # Добавляем подпись XGPT если её нет
+        if "XGPT" not in response_text:
+            response_text = f"✨ {response_text}\n\n— XGPT"
         
         # Используем запрос
         use_request(user_id)
@@ -498,30 +629,68 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Добавляем в историю
         add_to_history(user_id, user_message, response_text)
         
-        # Отправляем ответ пользователю (разбиваем на части, если слишком длинный)
+        # Проверяем, есть ли код в ответе
+        code_blocks = extract_code_blocks(response_text)
+        
+        # Отправляем текстовый ответ
         if len(response_text) > 4096:
             chunks = [response_text[i:i+4096] for i in range(0, len(response_text), 4096)]
-            await thinking_message.edit_text(chunks[0])
+            await thinking_message.edit_text(chunks[0], parse_mode='Markdown')
             for chunk in chunks[1:]:
-                await update.message.reply_text(chunk)
+                await update.message.reply_text(chunk, parse_mode='Markdown')
         else:
-            await thinking_message.edit_text(response_text)
+            await thinking_message.edit_text(response_text, parse_mode='Markdown')
+        
+        # Если есть код, создаем архив
+        if code_blocks:
+            try:
+                # Определяем название проекта из запроса
+                project_name = "xgpt_project"
+                if any(word in user_message.lower() for word in ['приложение', 'app', 'application']):
+                    project_name = "app"
+                elif any(word in user_message.lower() for word in ['сайт', 'site', 'website', 'web']):
+                    project_name = "website"
+                elif any(word in user_message.lower() for word in ['бот', 'bot']):
+                    project_name = "bot"
+                
+                zip_path = create_project_archive(code_blocks, project_name)
+                
+                # Отправляем архив
+                with open(zip_path, 'rb') as zip_file:
+                    await update.message.reply_document(
+                        document=zip_file,
+                        filename=f"{project_name}.zip",
+                        caption="📦 Архив с проектом от XGPT! Распакуй и используй 🚀"
+                    )
+                
+                # Удаляем временный файл
+                os.remove(zip_path)
+                os.rmdir(os.path.dirname(zip_path))
+                
+            except Exception as e:
+                logger.error(f"Ошибка при создании архива: {e}")
+                await update.message.reply_text(
+                    "⚠️ Код создан, но не удалось создать архив. "
+                    "Скопируй код из сообщения выше.\n\n✨ XGPT"
+                )
         
         # Показываем оставшиеся запросы
         available = get_available_requests(user_id)
         if available <= 5:
             await update.message.reply_text(
                 f"⚠️ Осталось запросов: {available}\n"
-                f"💡 Пригласи друзей для получения дополнительных запросов!",
+                f"💡 Пригласи друзей для получения дополнительных запросов!\n\n"
+                f"✨ XGPT",
                 reply_markup=get_main_keyboard()
             )
         
     except Exception as e:
         logger.error(f"Ошибка при обращении к Gemini AI: {e}")
         await thinking_message.edit_text(
-            f"❌ Извините, произошла ошибка при обработке вашего запроса.\n"
+            f"❌ Упс! Произошла ошибка, но XGPT не сдается!\n"
             f"Ошибка: {str(e)}\n\n"
-            f"Попробуйте позже или обратитесь в поддержку."
+            f"Попробуй еще раз или используй команду /help\n\n"
+            f"✨ XGPT всегда готов помочь!"
         )
 
 
@@ -549,7 +718,7 @@ def main() -> None:
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # Запускаем бота
-    logger.info("Запуск Telegram бота с расширенными функциями...")
+    logger.info("🚀 Запуск XGPT - AI-помощник для программирования...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
