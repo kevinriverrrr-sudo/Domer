@@ -1,100 +1,105 @@
-# Fake Mod Menu - Демонстрационное Android приложение
+# Fake Mod Menu - Демонстрационное приложение
 
-⚠️ **ВНИМАНИЕ**: Это демонстрационное приложение создано исключительно в образовательных целях. Все функции НЕ работают и служат только для визуального отображения. Это НЕ настоящий чит для Standoff 2 или любой другой игры.
+⚠️ **ВНИМАНИЕ**: Это демонстрационное приложение, созданное исключительно в образовательных целях. Все функции "читов" **НЕ РАБОТАЮТ** и представлены только в виде UI элементов.
 
 ## Описание
 
-Приложение симулирует мод меню с overlay (наложением) поверх других приложений. При запуске создается плавающее окно с вкладками различных "функций".
+Это Android приложение демонстрирует визуальный интерфейс мод меню с оверлеем (наложением поверх других приложений). Приложение включает:
 
-## Возможности
+### Функциональность:
+- ✅ Главный экран с кнопкой запуска
+- ✅ Мод меню работающее поверх других приложений
+- ✅ Перетаскиваемое окно меню
+- ✅ Несколько вкладок с различными функциями
 
 ### Вкладки:
-1. **Visuals** - Визуальные функции (ESP, Wallhack и т.д.)
-   - ESP Box, Name, Health, Distance
-   - Skeleton ESP
-   - Crosshair
-   - FOV Circle
-   - Night Mode
-   - Настройки толщины и дистанции
+1. **Visuals** - Визуальные настройки (ESP Box, ESP Name, ESP Health, Distance, Lines, Skeleton, Crosshair, FOV Circle, Night Mode, No Flash)
+2. **AimBot** - Автонаведение (Enable AimBot, Auto Shoot, Silent Aim, Aim at Head/Body, Target Lock, настройки FOV и Smooth)
+3. **Misc** - Разное (Speed Hack, No Recoil, No Spread, Fast Reload, Infinite Ammo, Rapid Fire, Jump Hack, Fly Mode, Teleport, Anti Ban)
+4. **Player** - Игрок (God Mode, Infinite Health/Armor, Auto Heal, Super Damage, One Shot Kill, No Fall/Fire Damage, Stealth Mode)
+5. **Settings** - Настройки (Show FPS/Ping, Panic Button, Save Config, Auto Update, Menu Opacity)
 
-2. **AimBot** - Автонаведение (нерабочее)
-   - Enable AimBot
-   - Auto Shoot
-   - Silent Aim
-   - Aim at Head/Body
-   - Target Lock
-   - Настройки FOV, Smooth, Speed
+## Требования
 
-3. **Misc** - Разные функции
-   - Speed Hack
-   - No Recoil/Spread
-   - Fast Reload
-   - Infinite Ammo
-   - Rapid Fire
-   - Jump Hack/Fly Mode
-   - Anti Ban
+- Android SDK (минимальная версия: Android 5.0 / API 21)
+- JDK 8 или выше
+- Gradle 7.4+
 
-4. **Player** - Функции игрока
-   - God Mode
-   - Infinite Health/Armor
-   - Auto Heal
-   - Super Damage
-   - One Shot Kill
-   - Stealth Mode
+## Установка и сборка
 
-5. **Settings** - Настройки
-   - Show FPS/Ping
-   - Panic Button
-   - Save Config
-   - Menu Opacity
-   - Font Size
+### 1. Клонирование проекта
 
-## Как собрать
+```bash
+cd FakeModMenu
+```
 
-### Требования:
-- Android Studio Arctic Fox или новее
-- Android SDK 21 или выше
-- Java 8+
+### 2. Создание keystore для подписи APK
 
-### Инструкции:
+Запустите скрипт для создания keystore:
 
-1. **Откройте проект в Android Studio:**
-   ```bash
-   cd FakeModMenu
-   # Откройте папку в Android Studio
-   ```
+```bash
+chmod +x create_keystore.sh
+./create_keystore.sh
+```
 
-2. **Синхронизация Gradle:**
-   - Android Studio автоматически предложит синхронизировать проект
-   - Подождите, пока загрузятся все зависимости
+Или создайте вручную с помощью keytool:
 
-3. **Сборка APK:**
-   - В меню: Build → Build Bundle(s) / APK(s) → Build APK(s)
-   - Или используйте командную строку:
-   ```bash
-   ./gradlew assembleDebug
-   ```
+```bash
+keytool -genkeypair -v -keystore keystore.jks -alias modmenu -keyalg RSA -keysize 2048 -validity 10000
+```
 
-4. **Установка:**
-   - APK будет находиться в: `app/build/outputs/apk/debug/app-debug.apk`
-   - Подключите устройство или запустите эмулятор
-   - Установите APK через Android Studio или adb:
-   ```bash
-   adb install app/build/outputs/apk/debug/app-debug.apk
-   ```
+При создании вам будет предложено ввести:
+- Пароль для keystore
+- Пароль для ключа
+- Информацию об организации (можно оставить пустым, нажимая Enter)
 
-## Как использовать
+### 3. Настройка подписи
 
-1. **Запустите приложение**
-2. **Нажмите "Запустить"**
-   - При первом запуске приложение попросит разрешение на отображение поверх других приложений
-   - Предоставьте это разрешение
-3. **Мод меню появится на экране**
-   - Вы можете перетаскивать его, удерживая заголовок
-   - Переключайтесь между вкладками
-   - Все переключатели и ползунки работают визуально, но не влияют на игры
-4. **Кнопка "×" в правом верхнем углу** скрывает/показывает меню
-5. **Для остановки** вернитесь в приложение и нажмите "Остановить"
+Создайте файл `keystore.properties` в корне проекта:
+
+```properties
+storePassword=ваш_пароль_хранилища
+keyPassword=ваш_пароль_ключа
+keyAlias=modmenu
+storeFile=keystore.jks
+```
+
+**ВАЖНО**: Не добавляйте этот файл в git! Он содержит приватные данные.
+
+### 4. Сборка APK
+
+#### Debug версия (без подписи):
+```bash
+./gradlew assembleDebug
+```
+APK будет находиться в: `app/build/outputs/apk/debug/app-debug.apk`
+
+#### Release версия (подписанная):
+```bash
+./gradlew assembleRelease
+```
+APK будет находиться в: `app/build/outputs/apk/release/app-release.apk`
+
+### 5. Установка на устройство
+
+```bash
+# Для debug версии
+adb install app/build/outputs/apk/debug/app-debug.apk
+
+# Для release версии
+adb install app/build/outputs/apk/release/app-release.apk
+```
+
+## Использование
+
+1. Установите APK на Android устройство
+2. Запустите приложение "Mod Menu"
+3. При первом запуске разрешите приложению отображаться поверх других окон
+4. Нажмите кнопку "Запустить"
+5. Мод меню появится на экране
+6. Перетаскивайте меню за заголовок
+7. Переключайтесь между вкладками
+8. Используйте кнопку "×" чтобы скрыть/показать меню
 
 ## Структура проекта
 
@@ -104,50 +109,82 @@ FakeModMenu/
 │   ├── src/
 │   │   └── main/
 │   │       ├── java/com/example/fakemodmenu/
-│   │       │   ├── MainActivity.java          # Главный экран
-│   │       │   └── OverlayService.java        # Сервис overlay меню
+│   │       │   ├── MainActivity.java          # Главная активность
+│   │       │   └── OverlayService.java        # Сервис оверлея
 │   │       ├── res/
 │   │       │   ├── layout/
-│   │       │   │   ├── activity_main.xml      # Макет главного экрана
-│   │       │   │   └── overlay_menu.xml       # Макет overlay меню
+│   │       │   │   ├── activity_main.xml      # UI главного экрана
+│   │       │   │   └── overlay_menu.xml       # UI мод меню
 │   │       │   └── values/
 │   │       │       ├── strings.xml
 │   │       │       ├── colors.xml
 │   │       │       └── themes.xml
 │   │       └── AndroidManifest.xml
-│   └── build.gradle
+│   ├── build.gradle
+│   └── proguard-rules.pro
 ├── build.gradle
 ├── settings.gradle
+├── gradle.properties
+├── create_keystore.sh                          # Скрипт создания keystore
 └── README.md
 ```
 
+## Разрешения
+
+Приложение запрашивает следующие разрешения:
+- `SYSTEM_ALERT_WINDOW` - для отображения оверлея поверх других приложений
+- `FOREGROUND_SERVICE` - для работы сервиса оверлея
+
 ## Технические детали
 
+- **Язык**: Java
 - **Минимальная версия Android**: 5.0 (API 21)
-- **Целевая версия**: Android 13 (API 33)
-- **Разрешения**: 
-  - `SYSTEM_ALERT_WINDOW` - для отображения поверх других приложений
-  - `FOREGROUND_SERVICE` - для работы сервиса
+- **Целевая версия Android**: 13 (API 33)
+- **Библиотеки**:
+  - AndroidX AppCompat 1.6.1
+  - Material Components 1.9.0
+  - ConstraintLayout 2.1.4
+
+## Отладка
+
+Для просмотра логов:
+```bash
+adb logcat | grep "FakeModMenu"
+```
+
+Для удаления приложения:
+```bash
+adb uninstall com.example.fakemodmenu
+```
 
 ## Важные замечания
 
-⚠️ **Это приложение:**
-- НЕ содержит реального кода для читов
-- НЕ модифицирует другие приложения или игры
-- НЕ может взаимодействовать с играми
-- Создано только для демонстрации UI/UX
-- Все "функции" - это просто переключатели без логики
+- ⚠️ Это **демонстрационное** приложение
+- ⚠️ Все функции "читов" **НЕ РАБОТАЮТ**
+- ⚠️ Приложение создано **исключительно в образовательных целях**
+- ⚠️ Не используйте подобные приложения в реальных играх - это нарушает правила и может привести к бану
 
-## Отказ от ответственности
+## Поддерживаемые устройства
 
-Это приложение создано исключительно в образовательных целях для демонстрации:
-- Работы с Android Overlay API
-- Создания плавающих окон
-- Управления сервисами Android
-- Динамического создания UI элементов
-
-Автор не несет ответственности за использование этого кода. Использование читов в онлайн-играх нарушает условия использования и может привести к бану.
+- Android 5.0 и выше
+- Все размеры экранов
+- Все разрешения
 
 ## Лицензия
 
-Этот проект предоставляется "как есть" для образовательных целей.
+Создано в образовательных целях. Используйте на свой риск.
+
+## Changelog
+
+### Version 1.0
+- Первый релиз
+- Основной UI
+- 5 вкладок с настройками
+- Поддержка оверлея
+- Перетаскиваемое окно
+
+---
+
+**Создано**: 2025
+**Автор**: Demo App
+**Цель**: Образовательная демонстрация
