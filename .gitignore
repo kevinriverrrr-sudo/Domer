@@ -1,0 +1,11 @@
+node_modules/
+android/
+ios/
+.DS_Store
+*.apk
+*.aab
+*.jks
+*.keystore
+lua-script-generator.apk
+capacitor.config.ts
+.capacitor/
