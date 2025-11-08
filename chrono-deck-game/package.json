@@ -1,0 +1,24 @@
+{
+  "name": "chrono-deck-game",
+  "version": "1.0.0",
+  "description": "ХроноКолода: Путешествие сквозь Эпохи - Карточная игра",
+  "main": "index.js",
+  "scripts": {
+    "build": "cordova build android",
+    "build-release": "cordova build android --release",
+    "sign": "jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore chrono-deck.keystore platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk chrono-deck-key"
+  },
+  "keywords": [
+    "game",
+    "cards",
+    "time-travel",
+    "history"
+  ],
+  "author": "ChronoDeck Team",
+  "license": "MIT",
+  "cordova": {
+    "platforms": [
+      "android"
+    ]
+  }
+}

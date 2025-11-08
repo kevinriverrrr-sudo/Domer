@@ -1,0 +1,52 @@
+================================
+ИНСТРУКЦИИ ПО СБОРКЕ APK
+================================
+
+Этот каталог содержит все необходимые файлы для создания APK.
+
+СПОСОБ 1 - Используйте Android Studio (РЕКОМЕНДУЕТСЯ):
+1. Откройте Android Studio
+2. File → New → Import Project
+3. Выберите папку '../android/'
+4. Подождите синхронизации Gradle
+5. Build → Build Bundle(s) / APK(s) → Build APK(s)
+6. APK будет в: android/app/build/outputs/apk/
+
+СПОСОБ 2 - Используйте онлайн-конвертеры:
+Самый простой способ! Создайте ZIP из папки assets/www/
+
+1. AppsGeyser (https://appsgeyser.com):
+   - Выберите "Website to App"
+   - Загрузите файлы или укажите URL
+   - Скачайте APK
+
+2. WebIntoApp (https://app.webintoapp.com):
+   - Загрузите ZIP с веб-файлами
+   - Настройте параметры
+   - Получите APK
+
+СПОСОБ 3 - Командная строка (требуется Android SDK):
+
+# Если у вас установлен Android SDK:
+export ANDROID_HOME=/path/to/android/sdk
+export PATH=$PATH:$ANDROID_HOME/build-tools/33.0.0
+
+# Компиляция ресурсов
+aapt2 compile --dir res -o compiled.zip
+aapt2 link compiled.zip --manifest AndroidManifest.xml \
+  -o unaligned.apk -I $ANDROID_HOME/platforms/android-33/android.jar
+
+# Добавление assets
+cd assets && zip -r ../unaligned.apk * && cd ..
+
+# Выравнивание
+zipalign -v 4 unaligned.apk app-unsigned.apk
+
+# Подпись (debug)
+apksigner sign --ks ~/.android/debug.keystore \
+  --ks-pass pass:android app-unsigned.apk
+
+СПОСОБ 4 - Используйте готовые скрипты проекта:
+../build.sh - автоматическая сборка через Gradle
+
+================================

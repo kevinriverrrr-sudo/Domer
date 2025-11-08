@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>ХроноКолода: Путешествие сквозь Эпохи</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen active">
+            <div class="title-container">
+                <h1 class="game-title">? ХроноКолода</h1>
+                <p class="game-subtitle">Путешествие сквозь Эпохи</p>
+            </div>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" onclick="game.startGame()">?? Новая Игра</button>
+                <button class="btn btn-secondary" onclick="game.continueGame()">?? Продолжить</button>
+                <button class="btn btn-secondary" onclick="game.showCollection()">?? Коллекция Карт</button>
+                <button class="btn btn-secondary" onclick="game.showArchive()">?? Архив Времени</button>
+            </div>
+            <div class="player-stats">
+                <p>Уровень: <span id="player-level">1</span></p>
+                <p>ХроноКристаллы: <span id="chrono-crystals">0</span></p>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="level-info">
+                    <h2 id="level-title">Уровень 1</h2>
+                    <p id="level-description">Описание уровня</p>
+                </div>
+                <div class="game-stats">
+                    <span>?? Энергия: <span id="energy">3</span></span>
+                    <span>? Ход: <span id="turn">1</span></span>
+                    <span>?? Кристаллы: <span id="crystals">0</span></span>
+                </div>
+            </div>
+
+            <div class="game-board">
+                <!-- Goal Area -->
+                <div class="goal-area">
+                    <h3>?? Цель уровня</h3>
+                    <div id="goal-cards" class="card-slots"></div>
+                    <div id="goal-progress"></div>
+                </div>
+
+                <!-- Play Area -->
+                <div class="play-area">
+                    <div id="played-cards" class="played-cards-container"></div>
+                    <div id="deck-area" class="deck-area">
+                        <div class="deck-pile" onclick="game.drawCard()">
+                            <div class="deck-card">??</div>
+                            <span id="deck-count">20</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Hand -->
+                <div class="hand-area">
+                    <h3>? Ваша рука</h3>
+                    <div id="player-hand" class="card-container"></div>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <button class="btn btn-small" onclick="game.endTurn()">Закончить ход</button>
+                <button class="btn btn-small btn-danger" onclick="game.returnToMenu()">Выйти</button>
+            </div>
+        </div>
+
+        <!-- Collection Screen -->
+        <div id="collection-screen" class="screen">
+            <div class="screen-header">
+                <h2>?? Коллекция Карт</h2>
+                <button class="btn btn-small" onclick="game.returnToMenu()">Назад</button>
+            </div>
+            <div class="collection-filters">
+                <button class="filter-btn active" onclick="game.filterCollection('all')">Все</button>
+                <button class="filter-btn" onclick="game.filterCollection('characters')">Персонажи</button>
+                <button class="filter-btn" onclick="game.filterCollection('events')">События</button>
+                <button class="filter-btn" onclick="game.filterCollection('artifacts')">Артефакты</button>
+            </div>
+            <div id="collection-cards" class="collection-grid"></div>
+        </div>
+
+        <!-- Archive Screen -->
+        <div id="archive-screen" class="screen">
+            <div class="screen-header">
+                <h2>?? Архив Времени</h2>
+                <button class="btn btn-small" onclick="game.returnToMenu()">Назад</button>
+            </div>
+            <div id="archive-content" class="archive-content"></div>
+        </div>
+
+        <!-- Victory Modal -->
+        <div id="victory-modal" class="modal">
+            <div class="modal-content">
+                <h2>?? Победа!</h2>
+                <p id="victory-message"></p>
+                <div id="rewards"></div>
+                <button class="btn btn-primary" onclick="game.nextLevel()">Следующий уровень</button>
+                <button class="btn btn-secondary" onclick="game.returnToMenu()">В меню</button>
+            </div>
+        </div>
+
+        <!-- Defeat Modal -->
+        <div id="defeat-modal" class="modal">
+            <div class="modal-content">
+                <h2>?? Временной Парадокс!</h2>
+                <p id="defeat-message"></p>
+                <button class="btn btn-primary" onclick="game.retryLevel()">Попробовать снова</button>
+                <button class="btn btn-secondary" onclick="game.returnToMenu()">В меню</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
