@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FunPay",
+    "name": "FunPay Mobile",
     "slug": "funpay-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.funpay.mobile"
+      "bundleIdentifier": "com.funpay.mobile",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,12 +25,19 @@
         "backgroundColor": "#4A90E2"
       },
       "package": "com.funpay.mobile",
+      "versionCode": 1,
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "funpay-mobile-project"
+      }
     }
   }
 }
