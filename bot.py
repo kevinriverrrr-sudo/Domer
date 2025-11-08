@@ -129,15 +129,24 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /check"""
-    await update.message.reply_text(
-        "💳 <b>Проверка карты</b>\n\n"
-        "Отправьте данные карты в формате:\n"
-        "<code>4111111111111111|12|2025|123</code>\n\n"
-        "Или:\n"
-        "<code>4111111111111111|12/2025|123</code>",
-        parse_mode='HTML'
-    )
-    context.user_data['waiting_for'] = 'single_card'
+    # Проверяем есть ли аргументы после команды
+    if context.args and len(context.args) > 0:
+        # Объединяем все аргументы в одну строку
+        card_data = ' '.join(context.args)
+        # Обрабатываем как проверку карты
+        await process_single_check(update, context, card_data)
+    else:
+        await update.message.reply_text(
+            "💳 <b>Проверка карты</b>\n\n"
+            "Отправьте данные карты в формате:\n"
+            "<code>4111111111111111|12|2025|123</code>\n\n"
+            "Или:\n"
+            "<code>4111111111111111|12/2025|123</code>\n\n"
+            "Или используйте:\n"
+            "<code>/check 4111111111111111|12|2025|123</code>",
+            parse_mode='HTML'
+        )
+        context.user_data['waiting_for'] = 'single_card'
 
 
 async def mass_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -213,8 +222,12 @@ async def process_single_check(update: Update, context: ContextTypes.DEFAULT_TYP
         await processing_msg.edit_text(
             "❌ <b>Ошибка парсинга</b>\n\n"
             "Неверный формат данных карты.\n\n"
-            "<b>Правильный формат:</b>\n"
-            "<code>4111111111111111|12|2025|123</code>",
+            "<b>Правильные форматы:</b>\n"
+            "<code>4111111111111111|12|2025|123</code>\n"
+            "<code>4111111111111111|12/2025|123</code>\n"
+            "<code>4111111111111111 12 2025 123</code>\n\n"
+            "<b>Ваш формат:</b>\n"
+            f"<code>{card_line[:50]}</code>",
             parse_mode='HTML'
         )
         return
@@ -225,9 +238,25 @@ async def process_single_check(update: Update, context: ContextTypes.DEFAULT_TYP
     card_brand = checker.get_card_bin_info(card_number)
     
     # Проверяем карту
-    status, message, response_data = checker.check_card(
-        card_number, exp_month, exp_year, cvv
-    )
+    try:
+        status, message, response_data = checker.check_card(
+            card_number, exp_month, exp_year, cvv
+        )
+    except Exception as e:
+        await processing_msg.edit_text(
+            f"❌ <b>Ошибка проверки</b>\n\n"
+            f"Произошла ошибка при проверке карты:\n"
+            f"<code>{str(e)}</code>\n\n"
+            f"💡 <b>Возможные причины:</b>\n"
+            f"• PayPal API credentials не настроены\n"
+            f"• Проблемы с интернет соединением\n"
+            f"• PayPal API временно недоступен\n\n"
+            f"📝 Настройте credentials в config.py:\n"
+            f"<code>PAYPAL_CLIENT_ID</code>\n"
+            f"<code>PAYPAL_SECRET</code>",
+            parse_mode='HTML'
+        )
+        return
     
     # Обновляем статистику
     update_user_stats(context.user_data, status)
