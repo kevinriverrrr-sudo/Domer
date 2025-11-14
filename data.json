@@ -1,0 +1,60 @@
+{
+  "users": {
+    "7694543415": {
+      "diamond": 9999999050.0,
+      "gold": 0,
+      "crystal": 1,
+      "click_power": 1,
+      "mines": [
+        {
+          "level": 3,
+          "income": 20
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        },
+        {
+          "level": 1,
+          "income": 10
+        }
+      ],
+      "total_clicks": 0,
+      "total_mined": 0,
+      "username": "MarkusGarantor",
+      "level": 1,
+      "experience": 0
+    }
+  },
+  "admin_users": [
+    "7694543415"
+  ],
+  "trends": {
+    "diamond": 1.0,
+    "gold": 1.0,
+    "crystal": 1.0
+  },
+  "top_clickers": [],
+  "top_miners": [],
+  "top_richest": []
+}
