@@ -1,0 +1,170 @@
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #2d3748;
+  background: #f7fafc;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: inherit;
+}
+
+.layout {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.hero p {
+  margin: 0;
+  font-size: 16px;
+  color: rgba(45, 55, 72, 0.72);
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(49, 130, 206, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: #3182ce;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.field select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(49, 130, 206, 0.3);
+  font-size: 15px;
+  background: #fefefe;
+}
+
+.exclusion-form {
+  display: flex;
+  gap: 12px;
+}
+
+.exclusion-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid rgba(49, 130, 206, 0.3);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.exclusion-form button {
+  background: #3182ce;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(49, 130, 206, 0.25);
+}
+
+.exclusions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exclusion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(49, 130, 206, 0.12);
+  color: #1a202c;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.exclusion-item button {
+  background: transparent;
+  border: none;
+  color: #e53e3e;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.muted {
+  margin: 0;
+  color: rgba(45, 55, 72, 0.7);
+  font-size: 14px;
+}
+
+code {
+  background: rgba(45, 55, 72, 0.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    background: #0f172a;
+    color: #edf2f7;
+  }
+  .hero p {
+    color: rgba(237, 242, 247, 0.7);
+  }
+  .card {
+    background: #1a202c;
+    border-color: rgba(49, 130, 206, 0.35);
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.6);
+  }
+  .field select,
+  .exclusion-form input {
+    background: #111827;
+    color: #edf2f7;
+    border-color: rgba(49, 130, 206, 0.45);
+  }
+  .exclusion-item {
+    background: rgba(49, 130, 206, 0.25);
+    color: #edf2f7;
+  }
+  code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
